@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Productivity Tracker</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Header Section -->
+        <header>
+            <div id="day-info">
+                <h1 id="current-day">Today: <span id="day-display">2024-12-22</span></h1>
+            </div>
+            <div id="controls">
+                <button id="prev-day">&laquo; Previous Day</button>
+                <button id="next-day">Next Day &raquo;</button>
+                <button id="refresh">Refresh</button>
+            </div>
+        </header>
+
+        <!-- Blog Section -->
+        <section id="daily-blog">
+            <h2>Daily Blog</h2>
+            <textarea id="blog-input" placeholder="Write your thoughts about the day..."></textarea>
+            <button id="save-blog">Save Blog</button>
+        </section>
+
+        <!-- Visualization Section -->
+        <section id="visualizations">
+            <h2>Activity Visualizations</h2>
+            <div id="charts">
+                <canvas id="barcode-chart"></canvas>
+                <canvas id="keystroke-chart"></canvas>
+            </div>
+        </section>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
