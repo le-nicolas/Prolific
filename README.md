@@ -48,5 +48,7 @@ Imagine you have a magic notebook that you carry with you all the time. This not
   
   Makes it fun to look at how much work you've done.
 
+
+
   
-Enjoy studying and improving your productivity! 😊
+--------------------------Enjoy studying and improving your productivity! 😊-------------------------------
