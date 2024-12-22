@@ -52,3 +52,10 @@ Imagine you have a magic notebook that you carry with you all the time. This not
 
   
 --------------------------Enjoy studying and improving your productivity! 😊-------------------------------
+
+
+Edit: this is inspired by this..
+
+
+![467475493_567519009406312_5368909278913658099_n](https://github.com/user-attachments/assets/50f07d6e-95d0-43f1-b57a-b9123d0a87bb)
+
