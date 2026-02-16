@@ -4,6 +4,7 @@
       $("#content").html('<div class="overview-msg">' + html + '</div>');
       $("#keysummary").empty();
       $("#timesummary").empty();
+      $("#yearsummary").empty();
       $("#keystats").empty();
     }
     var overviewPrimaryUrl = "http://127.0.0.1:8080/overview.html";
@@ -380,6 +381,7 @@
         key_stats_all = mergeWindowKeyEvents();
         visualizeKeySummary(key_stats_all);
         visualizeTimeSummary(edur);
+        visualizeYearlySummary(edur);
         try {
           drawKeyEvents(); // draw key events
         } catch (err) {
@@ -460,6 +462,82 @@
       chart_data.title = 'total time per window';
       chart_data.data = gstats;
       d3utils.drawHorizontalBarChart(d3.select('#timesummary'), chart_data);
+    }
+
+    function visualizeYearlySummary(edur) {
+      $("#yearsummary").empty();
+      if(!event_list || !edur || edur.length === 0) {
+        $("#yearsummary").html('<div class="overview-msg">No yearly data yet.</div>');
+        return;
+      }
+
+      var yearly = {};
+      var n = Math.min(edur.length, event_list.length);
+      for(var k=0;k<n;k++) {
+        var t0 = event_list[k].t0;
+        if(!t0) continue;
+
+        var year = new Date(t0 * 1000).getFullYear();
+        if(!yearly.hasOwnProperty(year)) {
+          yearly[year] = {total: 0, categories: {}};
+        }
+
+        var daystats = edur[k] || {};
+        for(var cat in daystats) {
+          if(!daystats.hasOwnProperty(cat)) continue;
+          var sec = daystats[cat];
+          if(!isFinite(sec) || sec <= 0) continue;
+          yearly[year].total += sec;
+          yearly[year].categories[cat] = (yearly[year].categories[cat] || 0) + sec;
+        }
+      }
+
+      var years = _.keys(yearly).sort().reverse();
+      if(years.length === 0) {
+        $("#yearsummary").html('<div class="overview-msg">No yearly data yet.</div>');
+        return;
+      }
+
+      var max_total = _.max(_.map(years, function(y) { return yearly[y].total; }));
+      max_total = Math.max(1, max_total);
+
+      var grid = $('<div class="year-grid"></div>');
+      _.each(years, function(year) {
+        var info = yearly[year];
+        var card = $('<article class="year-card"></article>');
+
+        var head = $('<div class="year-head"></div>');
+        head.append($('<h3 class="year-title"></h3>').text(year));
+        head.append($('<p class="year-total"></p>').text((info.total / 3600.0).toFixed(2) + ' hr tracked'));
+        card.append(head);
+
+        var track = $('<div class="year-track"><div class="year-fill"></div></div>');
+        track.find('.year-fill').css('width', (100 * info.total / max_total).toFixed(2) + '%');
+        card.append(track);
+
+        var cats = _.map(_.keys(info.categories), function(name) {
+          return {name: name, sec: info.categories[name]};
+        });
+        cats = _.sortBy(cats, function(d) { return d.sec; }).reverse();
+
+        var list = $('<div class="year-cats"></div>');
+        var limit = Math.min(6, cats.length);
+        for(var i=0;i<limit;i++) {
+          var row = $('<div class="year-cat-row"></div>');
+          row.append($('<span class="year-cat-name"></span>').text(cats[i].name));
+          row.append($('<span class="year-cat-hours"></span>').text((cats[i].sec / 3600.0).toFixed(2) + 'h'));
+          list.append(row);
+        }
+
+        if(cats.length === 0) {
+          list.append($('<div class="year-cat-row"></div>').text('No tracked categories'));
+        }
+
+        card.append(list);
+        grid.append(card);
+      });
+
+      $("#yearsummary").append(grid);
     }
 
     function startSpinner() {

@@ -19,7 +19,8 @@
 
 #content,
 #keystats,
-#summaries {
+#summaries,
+#yearsummary {
   border: 1px solid var(--border);
   border-radius: var(--radius-1);
   background: rgba(0, 0, 0, 0.18);
@@ -36,6 +37,87 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--space-2);
+}
+
+.year-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.year-card {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  background: rgba(13, 10, 8, 0.42);
+  padding: 14px;
+}
+
+.year-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.year-title {
+  margin: 0;
+  font-size: 22px;
+  color: var(--text-0);
+}
+
+.year-total {
+  margin: 0;
+  color: var(--text-1);
+  font-size: 14px;
+}
+
+.year-track {
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.year-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #ff8a2e, #ffbf7a);
+}
+
+.year-cats {
+  display: grid;
+  gap: 6px;
+}
+
+.year-cat-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.year-cat-name {
+  color: var(--text-1);
+}
+
+.year-cat-hours {
+  color: var(--text-0);
+  font-weight: 700;
+}
+
+.overview-msg {
+  padding: var(--space-2);
+  border-radius: var(--radius-1);
+  border: 1px dashed rgba(255, 167, 76, 0.45);
+  background: rgba(255, 122, 24, 0.08);
+  color: var(--text-0);
+  line-height: 1.6;
+}
+
+.overview-msg a {
+  color: #ffb266;
 }
 
 .legenddiv p {
@@ -75,6 +157,10 @@
 
 @media (max-width: 1100px) {
   #summaries {
+    grid-template-columns: 1fr;
+  }
+
+  .year-grid {
     grid-template-columns: 1fr;
   }
 }
