@@ -10,7 +10,7 @@ from note import log_note
 from rewind7am import rewindTime
 
 IP = "127.0.0.1"
-PORT = 8080
+PORT = 8090
 if len(sys.argv) > 1:
     PORT = int(sys.argv[1])
 

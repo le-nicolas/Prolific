@@ -1,8 +1,20 @@
     key_stats_all = [] // global
 
+    function showOverviewMessage(html) {
+      $("#content").html('<div class="overview-msg">' + html + '</div>');
+      $("#keysummary").empty();
+      $("#timesummary").empty();
+      $("#keystats").empty();
+    }
+    var canonicalOverviewUrl = "http://127.0.0.1:8090/overview.html";
+
     var skipdraw = {}; // global...
     function drawEvents() {
       $("#content").empty();
+      if(!event_list || event_list.length === 0) {
+        showOverviewMessage('No exported days yet. Click <b>Refresh Data</b> after tracking for a bit.');
+        return;
+      }
 
       // draw the legend on top of the svg
       var d3div = d3.select("#content");
@@ -329,17 +341,34 @@
     }
 
     function loadAllEvents() {
+      var loaded_ok = false;
 
       // load the master json file and all the other jsons
       getJSON_CACHEHACK("export_list.json").then(function(days_list) {
         event_list = days_list; // global variable assign
         console.log("fetched export_list OK.")
-        return Promise.all(days_list.map(function(x) { return getJSON_CACHEHACK(x.fname); }));
+        return Promise.all((days_list || []).map(function(x) { return getJSON_CACHEHACK(x.fname); }));
       }).then(function(days) {
         events = days; // global variable assign
+        loaded_ok = true;
       }).catch(function(err){
         console.log('some error happened: ' + err);
+        var msg = 'Global Overview could not load data. ';
+        if(window.location.protocol === 'file:') {
+          msg += 'Open it from the local server: ';
+          msg += '<a href="' + canonicalOverviewUrl + '">' + canonicalOverviewUrl + '</a>.';
+        } else {
+          msg += 'Try refreshing this page.';
+        }
+        showOverviewMessage(msg);
       }).then(function() {
+        if(!loaded_ok) {
+          return;
+        }
+        if(!event_list || event_list.length === 0) {
+          showOverviewMessage('No exported days yet. Click <b>Refresh Data</b> after tracking for a bit.');
+          return;
+        }
         
         analyzeEvents(); // all events have been loaded. Analyze!
         drawEvents(); // and d3js draw!
@@ -442,6 +471,13 @@
     var event_list;
     var events;
     function start() {
+      if(window.location.protocol === 'file:') {
+        showOverviewMessage(
+          'Global Overview needs the Prolific local server. Open ' +
+          '<a href="' + canonicalOverviewUrl + '">' + canonicalOverviewUrl + '</a>.'
+        );
+        return;
+      }
       
       loadAllEvents();
 
