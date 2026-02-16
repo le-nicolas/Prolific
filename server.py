@@ -7,7 +7,7 @@ from urllib.parse import parse_qs
 
 from export_events import updateEvents
 from note import log_note
-from rewind7am import rewindTime
+from storage import init_db, upsert_blog_for_timestamp
 
 IP = "127.0.0.1"
 PORT = 8080
@@ -22,6 +22,7 @@ LOG_DIR = os.path.join(ROOT_DIR, "logs")
 os.chdir(ROOT_DIR)
 os.makedirs(LOG_DIR, exist_ok=True)
 os.makedirs(RENDER_DIR, exist_ok=True)
+init_db()
 
 
 def coerce_int(value, fallback=None):
@@ -81,10 +82,7 @@ class CustomHandler(SimpleHTTPRequestHandler):
                     self.write_text(400, "Missing or invalid blog time")
                     return
 
-                t_day = rewindTime(post_time)
-                blog_path = os.path.join(LOG_DIR, f"blog_{t_day}.txt")
-                with open(blog_path, "w", encoding="utf-8", errors="replace") as f:
-                    f.write(post)
+                upsert_blog_for_timestamp(post_time, post)
 
                 updateEvents()
                 self.write_text(200, "OK")

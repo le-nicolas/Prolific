@@ -20,7 +20,8 @@
 #content,
 #keystats,
 #summaries,
-#yearsummary {
+#yearsummary,
+#miscinspector {
   border: 1px solid var(--border);
   border-radius: var(--radius-1);
   background: rgba(0, 0, 0, 0.18);
@@ -41,6 +42,38 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--space-2);
+}
+
+.misc-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.misc-table th,
+.misc-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  text-align: left;
+  vertical-align: top;
+}
+
+.misc-table th {
+  color: #ffb976;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.misc-title {
+  color: var(--text-0);
+  max-width: 620px;
+  word-break: break-word;
+}
+
+.misc-hours,
+.misc-hits {
+  color: var(--text-1);
+  white-space: nowrap;
 }
 
 .year-grid {

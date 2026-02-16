@@ -19,6 +19,7 @@ function showOverviewMessage(html) {
   $("#content").html('<div class="overview-msg">' + html + '</div>');
   $("#keysummary").empty();
   $("#timesummary").empty();
+  $("#miscinspector").empty();
   $("#yearsummary").empty();
   $("#keystats").empty();
 }
@@ -489,6 +490,71 @@ function visualizeTimeSummaryForYear(indices, local_categories) {
   d3utils.drawHorizontalBarChart(d3.select("#timesummary"), chart_data);
 }
 
+function visualizeMiscInspectorForYear(indices) {
+  $("#miscinspector").empty();
+
+  if(indices.length === 0) {
+    $("#miscinspector").html('<div class="overview-msg">No data for this year.</div>');
+    return;
+  }
+
+  var intro = $('<p class="year-viewing"></p>').text(
+    "Top raw titles currently mapped to MISC in " + active_year +
+    ". Use these to refine rules in render_settings.js."
+  );
+  $("#miscinspector").append(intro);
+
+  var aggregate = {};
+  for(var i=0;i<indices.length;i++) {
+    var day_ix = indices[i];
+    var day_events = events[day_ix]["window_events"] || [];
+    for(var j=0;j<day_events.length;j++) {
+      var e = day_events[j];
+      if(e.m !== "MISC") {
+        continue;
+      }
+      var raw_title = (e.s || "").trim();
+      if(!raw_title) {
+        continue;
+      }
+      var dt = 1;
+      if(j + 1 < day_events.length) {
+        dt = Math.max(0, day_events[j + 1].t - e.t);
+      }
+
+      if(!aggregate.hasOwnProperty(raw_title)) {
+        aggregate[raw_title] = {title: raw_title, seconds: 0, hits: 0};
+      }
+      aggregate[raw_title].seconds += dt;
+      aggregate[raw_title].hits += 1;
+    }
+  }
+
+  var rows = _.sortBy(_.values(aggregate), function(x) { return x.seconds; }).reverse();
+  if(rows.length === 0) {
+    $("#miscinspector").append(
+      $('<div class="overview-msg"></div>').text("No MISC entries for this year. Nice mapping coverage.")
+    );
+    return;
+  }
+
+  var table = $('<table class="misc-table"></table>');
+  table.append(
+    '<thead><tr><th>Raw Title</th><th>Hours</th><th>Hits</th></tr></thead>'
+  );
+  var body = $('<tbody></tbody>');
+  var limit = Math.min(20, rows.length);
+  for(var q=0;q<limit;q++) {
+    var row = $('<tr></tr>');
+    row.append($('<td class="misc-title"></td>').text(rows[q].title));
+    row.append($('<td class="misc-hours"></td>').text((rows[q].seconds / 3600.0).toFixed(2)));
+    row.append($('<td class="misc-hits"></td>').text(rows[q].hits));
+    body.append(row);
+  }
+  table.append(body);
+  $("#miscinspector").append(table);
+}
+
 function drawKeyEventsForYear(year) {
   $("#keystats").empty();
 
@@ -654,6 +720,7 @@ function drawYearlyOverview() {
   var local_categories = categoriesForIndices(indices);
   visualizeKeySummaryForYear(indices, local_categories);
   visualizeTimeSummaryForYear(indices, local_categories);
+  visualizeMiscInspectorForYear(indices);
 
   try {
     drawKeyEventsForYear(active_year);

@@ -1,6 +1,7 @@
 # Prolific on Windows (V2)
 
 This setup runs Prolific with a tray-first workflow and local-only analytics pages.
+Runtime storage is SQLite at `logs/prolific.db`.
 
 ## 1) Install dependencies
 
@@ -66,6 +67,18 @@ If you prefer script-based startup:
 
 - Default idle threshold is `300` seconds.
 - Change it with `--idle-seconds` (tray/manual) or `-IdleSeconds` (startup task).
+
+### Historical export cleaning
+
+- `export_events.py` filters records to each day boundary (`t0 <= t < t1`).
+- It collapses duplicate keyfreq timestamps and inserts inferred `__IDLE__` on stale window gaps.
+- Tune stale-gap cutoff with `PROLIFIC_MAX_WINDOW_ACTIVE_GAP_SECONDS` (default `1200`).
+
+### Legacy text logs to SQLite
+
+- Import old `logs/*.txt` into SQLite:
+  - `python migrate_logs_to_sqlite.py`
+- Open `logs/prolific.db` in DB Browser for SQLite if you want direct inspection.
 
 ### Duplicate process protection
 

@@ -10,7 +10,7 @@ import win32gui
 import win32process
 from pynput import keyboard
 
-from rewind7am import rewindTime
+from storage import init_db, insert_keyfreq_event, insert_window_event
 
 LOG_DIR = "logs"
 WINDOW_POLL_SECONDS = 2.0
@@ -35,20 +35,11 @@ def get_idle_seconds():
 
 def ensure_log_dir():
     os.makedirs(LOG_DIR, exist_ok=True)
+    init_db()
 
 
 def sanitize_text(text):
     return str(text).replace("\r", " ").replace("\n", " ").strip()
-
-
-def day_log_path(prefix, unix_time):
-    day_stamp = rewindTime(unix_time)
-    return os.path.join(LOG_DIR, f"{prefix}_{day_stamp}.txt")
-
-
-def append_log_line(path, line):
-    with open(path, "a", encoding="utf-8", errors="replace") as f:
-        f.write(f"{line}\n")
 
 
 def active_window_snapshot(idle_seconds=USER_IDLE_SECONDS):
@@ -90,8 +81,7 @@ def log_active_windows(
             should_write = payload != last_payload or (now - last_write_time) >= heartbeat_seconds
 
             if should_write:
-                log_path = day_log_path("window", now)
-                append_log_line(log_path, f"{now} {payload}")
+                insert_window_event(now, payload)
                 print(f"window: {payload}")
                 last_payload = payload
                 last_write_time = now
@@ -122,8 +112,7 @@ def log_key_frequency(stop_event, bucket_seconds=KEY_BUCKET_SECONDS):
                 count = bucket_count
                 bucket_count = 0
 
-            log_path = day_log_path("keyfreq", now)
-            append_log_line(log_path, f"{now} {count}")
+            insert_keyfreq_event(now, count)
             print(f"keyfreq: {count}")
     finally:
         listener.stop()

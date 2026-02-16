@@ -1,27 +1,43 @@
-# Prolific V2
+# Prolific
 
-Prolific is a Windows-first personal analytics app for learners and builders who want measurable progress.
+Prolific is a local, Windows-first tracking app for people who want real effort data instead of guesses.
 
-It tracks active windows and key frequency locally, then renders:
+## What It Does
 
-- a **Daily Analytics** page (`day.html`)
-- a **Global Overview** page (`overview.html`)
-- a branded **Homepage** (`index.html`)
+- Tracks active window title + process name
+- Tracks keyboard activity in time buckets
+- Stores events in SQLite (`logs/prolific.db`)
+- Exports daily event JSON files for dashboards
+- Provides a tray app with start/stop/open controls
+- Can auto-start at logon with Scheduled Task
 
-## Why this exists
+## What It Does Not Do
 
-This project is built for the stage where consistent effort matters most. The goal is simple: make your hours visible so your improvements are deliberate, not accidental.
+- No cloud sync by default
+- No screenshots
+- No microphone capture
+- No content-level logging (it tracks window/process activity, not document text)
 
-## Safety and privacy defaults
+## How Tracking Works
 
-- Data stays local by default.
-- Server binds to `127.0.0.1`.
-- Runtime data files are git-ignored:
-  - `logs/`
-  - `render/events_*.json`
-  - `render/export_list.json`
+- Foreground window is sampled every `2s`
+- Window event is written when it changes (with `10m` heartbeat)
+- Key frequency is logged every `9s`
+- Idle is detected after `300s` by default (`__IDLE__`)
+- Runtime storage is SQLite (`logs/prolific.db`)
+- Legacy text logs in `logs/*.txt` can be imported once
 
-## Quick start (Windows)
+## Dashboards
+
+- Home: `http://localhost:<port>/`
+- Daily: `http://localhost:<port>/day.html`
+- Overview: `http://localhost:<port>/overview.html`
+
+Legacy route compatibility remains:
+
+- `index.html?gotoday=<id>` redirects to `day.html?gotoday=<id>`
+
+## Quick Start (Windows)
 
 ```powershell
 cd C:\Users\User\prolific_deployment
@@ -29,13 +45,9 @@ python -m pip install -r requirements.txt
 python tray_app.py --port 8080 --fallback-port 8090 --idle-seconds 300
 ```
 
-What you get:
+This starts collector + server and puts a Prolific icon in the Windows tray.
 
-- tray icon (hidden icons area) with status + controls
-- collector + server lifecycle management
-- one-click open for homepage/day/overview
-
-## Tray controls
+## Tray Menu
 
 - Open Homepage
 - Open Daily Analytics
@@ -45,46 +57,90 @@ What you get:
 - Restart Tracking
 - Exit (Stop Everything)
 
-## Routes
-
-- `http://localhost:<port>/` -> Homepage
-- `http://localhost:<port>/day.html` -> Daily Analytics
-- `http://localhost:<port>/overview.html` -> Global Overview
-
-Legacy compatibility:
-
-- `index.html?gotoday=<id>` redirects to `day.html?gotoday=<id>`
-
-## Startup at logon
+## Start At Logon
 
 ```powershell
 cd C:\Users\User\prolific_deployment
 .\install_startup_task.ps1 -TaskName ProlificStartup -Port 8080 -FallbackPort 8090 -IdleSeconds 300
 ```
 
-Remove it later:
+Remove later:
 
 ```powershell
 Unregister-ScheduledTask -TaskName ProlificStartup -Confirm:$false
 ```
 
-## Manual fallback runner
+## Optional Script Runner
 
-If needed, you can still run the previous script runner:
+If you prefer no tray:
 
 ```powershell
-.\start_windows.ps1 -Port 8080
+.\start_windows.ps1 -Port 8080 -FallbackPort 8090 -IdleSeconds 300
 ```
 
-## Core backend contracts (unchanged)
+## API Contracts
 
 - `POST /refresh` -> `OK`
 - `POST /addnote` -> `OK`
 - `POST /blog` -> `OK`
 
-Export JSON schema per day (`render/events_<t0>.json`):
+Daily export schema (`render/events_<t0>.json`):
 
 - `window_events: [{t,s}]`
 - `keyfreq_events: [{t,s}]`
 - `notes_events: [{t,s}]`
 - `blog: string`
+
+## SQLite Migration
+
+Import existing legacy log files into SQLite:
+
+```powershell
+cd C:\Users\User\prolific_deployment
+python migrate_logs_to_sqlite.py
+```
+
+You can inspect data with DB Browser for SQLite using:
+
+- `logs/prolific.db`
+
+## Historical Data Cleaning
+
+`export_events.py` cleans old/noisy logs before writing `render/events_*.json`:
+
+- keeps only in-day records (`t0 <= t < t1`)
+- sorts events by timestamp
+- collapses duplicate keyfreq timestamps (keeps the highest value)
+- inserts inferred `__IDLE__` markers on stale long gaps
+
+Tune stale-gap cleanup:
+
+```powershell
+$env:PROLIFIC_MAX_WINDOW_ACTIVE_GAP_SECONDS = 1200
+python export_events.py
+```
+
+Set it to `0` to disable inferred-idle insertion.
+
+## Data And Privacy
+
+- Server binds to `127.0.0.1` (local machine)
+- Runtime artifacts ignored by git: `logs/`, `render/events_*.json`, `render/export_list.json`
+
+## Testing
+
+Run tests locally:
+
+```powershell
+python -m pip install -r requirements-dev.txt
+python -m pytest -q tests
+```
+
+CI runs tests on GitHub Actions (`.github/workflows/tests.yml`) for pushes and PRs.
+
+## Accuracy Notes
+
+- This is an activity tracker, not a perfect truth engine.
+- Time is inferred from event intervals.
+- Category quality depends on rules in `render/render_settings.js`.
+- If your category labels look wrong, fix mappings first, then refresh exports.
