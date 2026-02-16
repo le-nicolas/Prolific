@@ -65,11 +65,13 @@ def iter_python_processes():
 
 
 class RuntimeController:
-    def __init__(self, port, fallback_port):
+    def __init__(self, port, fallback_port, idle_seconds):
         self.port = int(port)
-        self.fallback_port = int(fallback_port)
+        self.fallback_port = int(fallback_port) if fallback_port is not None else None
+        self.idle_seconds = max(15, int(idle_seconds))
         self.python_exe = sys.executable
         self.active_port = None
+        self.last_error = ""
 
     def collector_procs(self):
         out = []
@@ -99,8 +101,9 @@ class RuntimeController:
     def detect_server_port(self):
         if self.server_procs(self.port):
             return self.port
-        if self.fallback_port != self.port and self.server_procs(self.fallback_port):
-            return self.fallback_port
+        if self.fallback_port is not None and self.fallback_port != self.port:
+            if self.server_procs(self.fallback_port):
+                return self.fallback_port
         return None
 
     def _spawn(self, args):
@@ -115,33 +118,41 @@ class RuntimeController:
     def ensure_collector(self):
         if self.collector_running():
             return True
-        self._spawn(["prolific.py", "start"])
+        self._spawn(["prolific.py", "start", "--idle-seconds", str(self.idle_seconds)])
         time.sleep(0.5)
         return self.collector_running()
 
     def ensure_server_port(self, port):
         port = int(port)
         if self.server_procs(port):
+            self.last_error = ""
             return True
         if port_listening(port):
+            self.last_error = f"port {port} is occupied by another app"
             return False
         self._spawn(["server.py", str(port)])
-        return http_ready(port, timeout_seconds=12)
+        if http_ready(port, timeout_seconds=12):
+            self.last_error = ""
+            return True
+        self.last_error = f"server failed to start on port {port}"
+        return False
 
     def ensure_runtime(self):
         self.ensure_collector()
         active = self.detect_server_port()
         if active is not None:
             self.active_port = active
+            self.last_error = ""
             return self.active_port
 
         if self.ensure_server_port(self.port):
             self.active_port = self.port
             return self.active_port
 
-        if self.fallback_port != self.port and self.ensure_server_port(self.fallback_port):
-            self.active_port = self.fallback_port
-            return self.active_port
+        if self.fallback_port is not None and self.fallback_port != self.port:
+            if self.ensure_server_port(self.fallback_port):
+                self.active_port = self.fallback_port
+                return self.active_port
 
         self.active_port = None
         return None
@@ -166,13 +177,16 @@ class RuntimeController:
                 pass
 
         self.active_port = None
+        self.last_error = ""
 
     def restart(self):
         self.stop_all()
         return self.ensure_runtime()
 
     def base_url(self):
-        port = self.active_port or self.detect_server_port() or self.ensure_runtime() or self.port
+        port = self.active_port or self.detect_server_port() or self.ensure_runtime()
+        if port is None:
+            return None
         self.active_port = port
         return f"http://localhost:{int(port)}"
 
@@ -187,12 +201,14 @@ def make_icon_image():
     return image
 
 
-def build_tray(port, fallback_port, open_on_start):
-    controller = RuntimeController(port=port, fallback_port=fallback_port)
+def build_tray(port, fallback_port, idle_seconds, open_on_start):
+    controller = RuntimeController(port=port, fallback_port=fallback_port, idle_seconds=idle_seconds)
     controller.ensure_runtime()
 
     if open_on_start:
-        webbrowser.open(controller.base_url())
+        url = controller.base_url()
+        if url:
+            webbrowser.open(url)
 
     def refresh_menu(icon):
         try:
@@ -205,23 +221,31 @@ def build_tray(port, fallback_port, open_on_start):
         srv = controller.detect_server_port()
         if collector and srv is not None:
             return f"Status: running on :{srv}"
+        if controller.last_error:
+            return f"Status: {controller.last_error}"
         if collector:
             return "Status: collector only"
         return "Status: stopped"
 
     def open_home(icon, _item):
         controller.ensure_runtime()
-        webbrowser.open(controller.base_url() + "/")
+        url = controller.base_url()
+        if url:
+            webbrowser.open(url + "/")
         refresh_menu(icon)
 
     def open_day(icon, _item):
         controller.ensure_runtime()
-        webbrowser.open(controller.base_url() + "/day.html")
+        url = controller.base_url()
+        if url:
+            webbrowser.open(url + "/day.html")
         refresh_menu(icon)
 
     def open_overview(icon, _item):
         controller.ensure_runtime()
-        webbrowser.open(controller.base_url() + "/overview.html")
+        url = controller.base_url()
+        if url:
+            webbrowser.open(url + "/overview.html")
         refresh_menu(icon)
 
     def start_tracking(icon, _item):
@@ -271,7 +295,8 @@ def acquire_singleton_mutex():
 def parse_args():
     parser = argparse.ArgumentParser(description="Prolific tray controller")
     parser.add_argument("--port", type=int, default=8080)
-    parser.add_argument("--fallback-port", type=int, default=8090)
+    parser.add_argument("--fallback-port", type=int, default=8090, help=argparse.SUPPRESS)
+    parser.add_argument("--idle-seconds", type=int, default=300)
     parser.add_argument("--no-open", action="store_true", help="Do not open homepage on startup")
     return parser.parse_args()
 
@@ -282,7 +307,7 @@ def main():
     if mutex is None:
         return 0
 
-    icon = build_tray(args.port, args.fallback_port, open_on_start=not args.no_open)
+    icon = build_tray(args.port, args.fallback_port, args.idle_seconds, open_on_start=not args.no_open)
     try:
         icon.run()
     finally:

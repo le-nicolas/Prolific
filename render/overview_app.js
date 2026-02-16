@@ -1,464 +1,800 @@
-    key_stats_all = [] // global
+key_stats_all = []; // global
 
-    var skipdraw = {}; // global...
-    function drawEvents() {
-      $("#content").empty();
+var overviewPrimaryUrl = "http://127.0.0.1:8080/overview.html";
+var overviewFallbackUrl = "http://127.0.0.1:8090/overview.html";
 
-      // draw the legend on top of the svg
-      var d3div = d3.select("#content");
-      var ldiv = d3div.append("div").attr('class', 'legenddiv');
+var skipdraw = {};
+var etypes = [];
+var edur = []; // duration by day index -> {category: seconds}
+var color_hash = {};
+var event_list = [];
+var events = [];
 
-      for(var i=0;i<etypes.length;i++) {
-        var pi = ldiv.append('p').text(etypes[i]).attr('style', 'color:' + color_hash[etypes[i]]);
+var year_stats = {};
+var year_order = [];
+var active_year = null;
 
-        var m = etypes[i];
-        if(skipdraw[m]) { pi.attr('class', 'skipdrawyes'); }
-        else { pi.attr('class', 'skipdrawno'); }
+function showOverviewMessage(html) {
+  $("#graphopts").empty();
+  $("#content").html('<div class="overview-msg">' + html + '</div>');
+  $("#keysummary").empty();
+  $("#timesummary").empty();
+  $("#miscinspector").empty();
+  $("#yearsummary").empty();
+  $("#keystats").empty();
+}
 
-        pi.on('click', function(i) { // close over index i
-          return function() {
-            // toggle whether this one gets drawn
-            var m = etypes[i];
-            if(skipdraw[m] === false) { skipdraw[m] = true; }
-            else { skipdraw[m] = false; }
-            drawEvents(); // and redraw the graph!
-          }
-        }(i));
-      }
+function mapEvents(es) {
+  for(var i=0,N=es.length;i<N;i++) {
+    var e = es[i];
+    e.m = mapwin(e.s);
+    if(etypes.indexOf(e.m) === -1) {
+      etypes.push(e.m);
+    }
+    if(!skipdraw.hasOwnProperty(e.m)) {
+      skipdraw[e.m] = false;
+    }
+  }
+}
 
-      var margin = {top: 10, right: 10, bottom: 100, left: 40};
-      var fullwidth = 1200;
-      var fullheight = 800;
-      var width = fullwidth - margin.left - margin.right;
-      var height = fullheight - margin.top - margin.bottom;
-      var svg = d3div.append("svg")
-        .attr("width", width + margin.left + margin.right)
-        .attr("height", height + margin.top + margin.bottom)
+function statEvents(es, ecounts) {
+  if(es.length === 0) return; // empty case
 
-      var yscale = 0.008;
+  var ixprev = 0;
+  for(var i=1,N=es.length;i<N;i++) {
+    var dt = es[i].t - es[ixprev].t;
+    es[ixprev].dt = dt;
+    var tmap = es[ixprev].m;
+    if(ecounts.hasOwnProperty(tmap)) {
+      ecounts[tmap] += dt;
+    } else {
+      ecounts[tmap] = 0;
+    }
+    ixprev = i;
+  }
+  es[N-1].dt = 1;
+}
 
-      // draw y axis labels
-      var yoff = 0;
-      var yn = 0;
-      while(yoff < height) {
+function analyzeEvents() {
+  edur = [];
+  etypes = [];
 
-        var yy = (height + margin.top - yoff);
-        svg.append("text")
-          .attr("transform", "translate(1," + (yy-3) + ")")
-          .text(yn + "hr");
+  for(var k=0;k<events.length;k++) {
+    var es = events[k]["window_events"] || [];
+    mapEvents(es);
+  }
 
-        svg.append("line")
-          .attr("x1", 0)
-          .attr("x2", width + margin.left)
-          .attr("y1", yy)
-          .attr("y2", yy)
-          .attr("stroke", "#EEE")
-          .attr("stroke-width", 1);
+  color_hash = colorHashStrings(etypes);
 
-        yn++;
-        yoff += 3600 * yscale;
-      }
+  for(var q=0;q<events.length;q++) {
+    edur.push({});
+    var day_events = events[q]["window_events"] || [];
+    statEvents(day_events, edur[q]);
+  }
+}
 
-      // draw x axis labels
-      var N = edur.length;
-      var dsz = width / N;
-      svg.selectAll('.xlabel')
-        .data(event_list)
-      .enter()
-        .append("text")
-        .attr("transform", function(d, i) {
-          var x = margin.left + i * dsz;
-          var y = height + margin.top + 3;
-          return "translate(" + x + "," + y + ")rotate(90)";})
-        .attr("fill", "#333")
-        .attr("font-family", "arial")
-        .attr("font-size", "14px")
-        .text(function(d) { var dobj = new Date(d.t0 * 1000); return ppDateShort(dobj); })
+function sumDayDurations(day_dur) {
+  var total = 0;
+  if(!day_dur) return total;
+  for(var cat in day_dur) {
+    if(day_dur.hasOwnProperty(cat)) {
+      total += day_dur[cat];
+    }
+  }
+  return total;
+}
 
-      // draw vertical lines at week boundaries for easier visual consumption
-      svg.selectAll('.yd')
-        .data(event_list)
-      .enter()
-        .append("line")
-        .attr("stroke", function(d) { 
-          var dobj = new Date(d.t0 * 1000); 
-          var isMonday = dobj.getDay() === 1;
-          return isMonday ? "#BBB" : "#EEE"
-        })
-        .attr('x1', function(d, i) { return margin.left + i * dsz; })
-        .attr('x2', function(d, i) { return margin.left + i * dsz; })
-        .attr('y1', height + margin.top)
-        .attr('y2', margin.top);
+function buildYearStats() {
+  year_stats = {};
+  year_order = [];
 
-      // draw the data
-      for(var k=0;k<N;k++) {
-        // convert from kv to list
-        var dtimes = [];
-        for(var i=0;i<etypes.length;i++) {
-          var m = etypes[i];
-          if(skipdraw[m]) continue; // skip!
-          dtimes.push({
-            val: edur[k].hasOwnProperty(m) ? edur[k][m] : 0,
-            col: color_hash[m]
-          });
-        }
+  var n = Math.min(event_list.length, events.length, edur.length);
+  for(var k=0;k<n;k++) {
+    var t0 = event_list[k].t0;
+    if(!t0) continue;
 
-        svgg = svg.append('g')
-          .attr("style", "cursor:pointer;")
-          .on("click", function(q){ 
-            return function(){
-              window.location.href = 'day.html?gotoday=' + q;
-            };
-          }(k)); // have to closure k
-
-        var gh = 0;
-        svgg.selectAll(".day"+k)
-          .data(dtimes)
-        .enter()
-          .append("rect")
-          .attr("width", dsz)
-          .attr("height", function(d) { return d.val * yscale; })
-          .attr("x", margin.left + k * dsz)
-          .attr("y", function(d) { gh += d.val; return height + margin.top - gh * yscale; })
-          .attr("fill", function(d) { return d.col; } );
-      }
+    var year = new Date(t0 * 1000).getFullYear();
+    if(!year_stats.hasOwnProperty(year)) {
+      year_stats[year] = {
+        year: year,
+        indices: [],
+        day_count: 0,
+        total_seconds: 0,
+        total_keys: 0
+      };
+      year_order.push(year);
     }
 
-    // enter .m field and build up etypes[]
-    var etypes = []
-    function mapEvents(es) {
-      for(var i=0,N=es.length;i<N;i++) {
-        var e = es[i];
-        e.m = mapwin(e.s);
-        if(etypes.indexOf(e.m) === -1) { 
-          etypes.push(e.m); 
-          skipdraw[e.m] = false;
-        }
+    var ys = year_stats[year];
+    ys.indices.push(k);
+    ys.day_count += 1;
+    ys.total_seconds += sumDayDurations(edur[k]);
+
+    var key_events = events[k]["keyfreq_events"] || [];
+    for(var i=0;i<key_events.length;i++) {
+      ys.total_keys += (key_events[i].s || 0);
+    }
+  }
+
+  year_order = _.sortBy(year_order, function(y) { return y; });
+
+  if(year_order.length === 0) {
+    active_year = null;
+    return;
+  }
+
+  if(active_year === null || !year_stats.hasOwnProperty(active_year)) {
+    var best_year = year_order[0];
+    var best_days = -1;
+    for(var i=0;i<year_order.length;i++) {
+      var y = year_order[i];
+      var days = year_stats[y].day_count;
+      if(days > best_days) {
+        best_days = days;
+        best_year = y;
       }
     }
+    active_year = best_year;
+  }
+}
 
-    function statEvents(es, ecounts) {
-      if(es.length === 0) return; // empty case
-
-      var t0 = es[0].t;
-      var ixprev = 0;
-      for(var i=1,N=es.length;i<N;i++) {
-        var e = es[i];
-        var dt = es[i].t - es[ixprev].t; // length of time for last event
-        es[ixprev].dt = dt;
-        var tmap = es[ixprev].m; // mapped title of previous events
-        if(ecounts.hasOwnProperty(tmap)) {
-          ecounts[tmap] += dt;
-        } else {
-          ecounts[tmap] = 0;
-        }
-        ixprev = i;
-      }
-      es[N-1].dt = 1; // last event we dont know how long lasted. assume 1 second?
-    }
-
-    var edur = []; // stores durations for events for all days. Core structure!
-    var color_hash = {};
-    function analyzeEvents() {
-      edur = []; // reset global var
-
-      for(var k=0;k<events.length;k++) {
-        var es = events[k]['window_events']; // window events for day k
-        mapEvents(es); // assign group names to structure in field .m, build etypes[]
-      }
-      color_hash = colorHashStrings(etypes);
-      
-      for(var k=0;k<events.length;k++) {
-        edur.push({}) // hmmm
-        var es = events[k]['window_events']; // window events for day k
-        statEvents(es, edur[k]);
+function categoryTotalsForIndices(indices) {
+  var totals = {};
+  for(var i=0;i<indices.length;i++) {
+    var k = indices[i];
+    var day_dur = edur[k] || {};
+    for(var cat in day_dur) {
+      if(day_dur.hasOwnProperty(cat)) {
+        totals[cat] = (totals[cat] || 0) + day_dur[cat];
       }
     }
+  }
+  return totals;
+}
 
-    function drawKeyEvents() {
+function categoriesForIndices(indices) {
+  var totals = categoryTotalsForIndices(indices);
+  var cats = [];
+  for(var cat in totals) {
+    if(!totals.hasOwnProperty(cat)) continue;
+    if(totals[cat] <= 0) continue;
+    cats.push({name: cat, val: totals[cat]});
+  }
+  cats = _.sortBy(cats, "val").reverse();
+  return _.pluck(cats, "name");
+}
 
-      var W = $("#keystats").width();
-      var H = 15;
-      $("#keystats").empty();
-      if(!events || events.length === 0) {
-        return;
-      }
+function renderYearControls() {
+  $("#graphopts").empty();
+  if(year_order.length === 0) return;
 
-      var wmargin = 100;
+  var controls = $('<div class="year-controls"></div>');
+  var years_desc = year_order.slice(0).reverse();
+  _.each(years_desc, function(y) {
+    var info = year_stats[y];
+    var btn = $('<button type="button" class="year-chip"></button>');
+    btn.text(y + " (" + info.day_count + "d)");
+    if(y === active_year) {
+      btn.addClass("active");
+    }
+    btn.click(function() {
+      active_year = y;
+      drawYearlyOverview();
+    });
+    controls.append(btn);
+  });
 
-      var time_bin = 10*60; // in seconds
-      var allkevents = [];
-      var d0s = [];
-      var ktots = [];
-      var maxs = 0;
-      var maxktot = 0;
-      var kevents_global = [];
-      var max_kevents_global = 0;
-      var sum_kevents_global = 0;
-      for(var k=0;k<events.length;k++) {
-        var es = events[k]['keyfreq_events'] || []; // keyfreq events for day k
-        
-        // use exported day boundary so empty keyfreq days are still represented
-        var t00 = event_list[k].t0;
-        var d0 = new Date(t00 * 1000);
-        var ft = t00 + 60*60*24; // 7am the next day
-        var kevents = [];
-        var t = t00;
-        while(t <= ft) { 
-          kevents.push(0); t += time_bin; // create time bins
-          if(k===0) { kevents_global.push(0); }
-        } 
+  var info_active = year_stats[active_year];
+  var meta = $('<p class="year-viewing"></p>');
+  if(info_active) {
+    meta.text(
+      "Viewing " + active_year +
+      ": " + info_active.day_count + " days, " +
+      (info_active.total_seconds / 3600.0).toFixed(2) + " hours tracked"
+    );
+  }
 
-        // bucket up the events
-        var ktot = 0;
-        for(var q=0,n=es.length;q<n;q++) {
-          var kw = es[q];
-          var binix = Math.floor((kw.t - t00)/time_bin);
-          if(binix < 0 || binix >= kevents.length) {
-            continue;
-          }
-          var news = kevents[binix] + kw.s;
-          kevents[binix] = news;
-          var newg = kevents_global[binix] + kw.s;
-          if(news > maxs) { maxs = news; }
+  $("#graphopts").append(controls).append(meta);
+}
 
-          kevents_global[binix] = newg;
-          if(newg > max_kevents_global) { max_kevents_global = newg; }
-          sum_kevents_global += kw.s;
-          
-          ktot += kw.s;
-        }
-        allkevents.push(kevents);
-        d0s.push(d0);
-        ktots.push(ktot);
-        if(ktot > maxktot) { maxktot = ktot; }
-      }
+function renderYearSummaryCards() {
+  $("#yearsummary").empty();
 
-      // avoid divide-by-zero when there is no key activity
-      maxs = Math.max(1, maxs);
-      maxktot = Math.max(1, maxktot);
-      max_kevents_global = Math.max(1, max_kevents_global);
+  if(year_order.length === 0) {
+    $("#yearsummary").html('<div class="overview-msg">No yearly data yet.</div>');
+    return;
+  }
 
-      // draw global key events across all days as line
-      var sx = kevents_global.length;
-      var bar_width = (W - wmargin) / sx;
-      var div = d3.select("#keystats").append("div");
-      var svg = div.append("svg")
-        .attr("width", W)
-        .attr("height", H*2);
-      var line = d3.svg.line()
-        .x(function(d,i) { return (W - 2*wmargin) * i / sx + wmargin; })
-        .y(function(d) { return 2*H - d / max_kevents_global * H * 2; });
-      svg.append("path")
-        .datum(kevents_global)
-        .attr("class", "line")
-        .attr("d", line);
+  var years_desc = year_order.slice(0).reverse();
+  var max_total = _.max(_.map(years_desc, function(y) {
+    return year_stats[y].total_seconds;
+  }));
+  max_total = Math.max(1, max_total);
 
-      // draw x axis: times of the day
-      var div = d3.select("#keystats").append("div");
-      var svg = div.append("svg")
-        .attr("width", W)
-        .attr("height", 20);
-      for(var q=0;q<24;q++) {
-        svg.append('text')
-        .attr('font-size', 14)
-        .attr("font-family", "arial")
-        .attr("transform", "translate(" + (q/24*(W-2*wmargin)+2+wmargin) + ",16)")
-        .text(function(d, i) { return ((q + 7) % 24) + ':00'; });
+  var grid = $('<div class="year-grid"></div>');
 
-        svg.append('line')
-        .attr('x1', q/24*(W-2*wmargin)+wmargin)
-        .attr('x2', q/24*(W-2*wmargin)+wmargin)
-        .attr('y1', 0)
-        .attr('y2', 20)
-        .attr("stroke", "#000")
-        .attr("stroke-width", 2);
+  _.each(years_desc, function(y) {
+    var info = year_stats[y];
+    var avg_keys = info.day_count > 0 ? Math.floor(info.total_keys / info.day_count) : 0;
 
-      }
-
-      for(var k=0;k<events.length;k++) {
-
-        var kevents = allkevents[k];
-        var div = d3.select("#keystats").append("div").attr("class", "divkeys");
-
-        var svg = div.append("svg")
-        .attr("width", W)
-        .attr("height", H);
-        var sx = kevents.length;
-
-        svg.selectAll('.ke')
-          .data(kevents)
-        .enter()
-          .append('rect')
-          .attr('x', function(d,i) { return (W - 2*wmargin) * i / sx + wmargin; })
-          .attr('width', bar_width)
-          .attr('y', 0)
-          .attr('height', H)
-          .attr('fill', function(d) {
-            var e = d / maxs;
-            var r = Math.floor(Math.max(0, 255 - e*255));
-            var g = Math.floor(Math.max(0, 255 - e*255));
-            var b = 255;
-            return 'rgb(' + r + ',' + g + ',' + b + ')';
-          });
-
-        // draw y axis: time
-        svg.append('text')
-          .attr("font-size", 14)
-          .attr("transform", "translate(0,12)")
-          .attr("font-family", "arial")
-          .text(ppDateShort(d0s[k]));
-
-        // draw y axis: total number of keys
-        svg.append('rect')
-          .attr('x', W - wmargin + 5)
-          .attr('y', 0)
-          .attr('width', function(d) { return ktots[k]/maxktot * wmargin; })
-          .attr('height', H)
-          .attr('fill', 'rgb(255, 100, 100)');
-
-        svg.append('text')
-          .attr('transform', 'translate(' + (W - wmargin + 7) + ', ' + 13 + ')')
-          .attr('font-size', 14)
-          .attr("font-family", "arial")
-          .text(ktots[k]);
-      }
-
-      var kevents_global
-      div.append('p').text('total keys pressed: ' + sum_kevents_global + ' in ' + events.length + ' days (' + Math.floor(sum_kevents_global/events.length) + ' per day average)');
+    var card = $('<article class="year-card"></article>');
+    if(y === active_year) {
+      card.addClass("active");
     }
 
-    function loadAllEvents() {
+    var head = $('<div class="year-head"></div>');
+    head.append($('<h3 class="year-title"></h3>').text(y));
+    head.append($('<p class="year-total"></p>').text((info.total_seconds / 3600.0).toFixed(2) + " hr"));
+    card.append(head);
 
-      // load the master json file and all the other jsons
-      getJSON_CACHEHACK("export_list.json").then(function(days_list) {
-        event_list = days_list; // global variable assign
-        console.log("fetched export_list OK.")
-        return Promise.all(days_list.map(function(x) { return getJSON_CACHEHACK(x.fname); }));
-      }).then(function(days) {
-        events = days; // global variable assign
-      }).catch(function(err){
-        console.log('some error happened: ' + err);
-      }).then(function() {
-        
-        analyzeEvents(); // all events have been loaded. Analyze!
-        drawEvents(); // and d3js draw!
-        
-        key_stats_all = mergeWindowKeyEvents();
-        visualizeKeySummary(key_stats_all);
-        visualizeTimeSummary(edur);
-        try {
-          drawKeyEvents(); // draw key events
-        } catch (err) {
-          console.log('drawKeyEvents failed: ' + err);
-        }
+    card.append(
+      $('<p class="year-meta"></p>').text(
+        info.total_keys + " keys in " + info.day_count + " days (" + avg_keys + "/day)"
+      )
+    );
+
+    var track = $('<div class="year-track"><div class="year-fill"></div></div>');
+    track.find(".year-fill").css("width", (100 * info.total_seconds / max_total).toFixed(2) + "%");
+    card.append(track);
+
+    card.click(function() {
+      active_year = y;
+      drawYearlyOverview();
+    });
+
+    grid.append(card);
+  });
+
+  $("#yearsummary").append(grid);
+}
+
+function drawEventsForYear(year) {
+  $("#content").empty();
+
+  var info = year_stats[year];
+  if(!info || info.indices.length === 0) {
+    $("#content").html('<div class="overview-msg">No days for this year.</div>');
+    return;
+  }
+
+  var indices = info.indices;
+  var days = _.map(indices, function(ix) { return event_list[ix]; });
+  var local_edur = _.map(indices, function(ix) { return edur[ix] || {}; });
+  var local_categories = categoriesForIndices(indices);
+
+  if(local_categories.length === 0) {
+    $("#content").html('<div class="overview-msg">No mapped activity categories for this year.</div>');
+    return;
+  }
+
+  var d3div = d3.select("#content");
+  var ldiv = d3div.append("div").attr("class", "legenddiv");
+
+  for(var i=0;i<local_categories.length;i++) {
+    var cat = local_categories[i];
+    var pi = ldiv.append("p").text(cat).attr("style", "color:" + color_hash[cat]);
+
+    if(skipdraw[cat]) { pi.attr("class", "skipdrawyes"); }
+    else { pi.attr("class", "skipdrawno"); }
+
+    pi.on("click", function(m) {
+      return function() {
+        skipdraw[m] = !skipdraw[m];
+        drawEventsForYear(active_year);
+      };
+    }(cat));
+  }
+
+  var margin = {top: 10, right: 10, bottom: 100, left: 42};
+  var N = local_edur.length;
+  var fullwidth = Math.max(1200, N * 14 + margin.left + margin.right + 40);
+  var fullheight = 800;
+  var width = fullwidth - margin.left - margin.right;
+  var height = fullheight - margin.top - margin.bottom;
+  var svg = d3div.append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom);
+
+  var yscale = 0.008;
+
+  var yoff = 0;
+  var yn = 0;
+  while(yoff < height) {
+    var yy = (height + margin.top - yoff);
+    svg.append("text")
+      .attr("transform", "translate(1," + (yy-3) + ")")
+      .attr("fill", "#d8c6b5")
+      .text(yn + "hr");
+
+    svg.append("line")
+      .attr("x1", 0)
+      .attr("x2", width + margin.left)
+      .attr("y1", yy)
+      .attr("y2", yy)
+      .attr("stroke", "rgba(255,255,255,0.15)")
+      .attr("stroke-width", 1);
+
+    yn++;
+    yoff += 3600 * yscale;
+  }
+
+  var dsz = N > 0 ? width / N : width;
+  svg.selectAll(".xlabel")
+    .data(days)
+    .enter()
+    .append("text")
+    .attr("transform", function(d, i) {
+      var x = margin.left + i * dsz;
+      var y = height + margin.top + 3;
+      return "translate(" + x + "," + y + ")rotate(90)";
+    })
+    .attr("fill", "#cab8a7")
+    .attr("font-family", "'Lato', sans-serif")
+    .attr("font-size", "12px")
+    .text(function(d) {
+      return ppDateShort(new Date(d.t0 * 1000));
+    });
+
+  svg.selectAll(".yd")
+    .data(days)
+    .enter()
+    .append("line")
+    .attr("stroke", function(d) {
+      var dobj = new Date(d.t0 * 1000);
+      return dobj.getDay() === 1 ? "rgba(255,185,120,0.55)" : "rgba(255,255,255,0.1)";
+    })
+    .attr("x1", function(d, i) { return margin.left + i * dsz; })
+    .attr("x2", function(d, i) { return margin.left + i * dsz; })
+    .attr("y1", height + margin.top)
+    .attr("y2", margin.top);
+
+  for(var k=0;k<N;k++) {
+    var dtimes = [];
+    for(var q=0;q<local_categories.length;q++) {
+      var m = local_categories[q];
+      if(skipdraw[m]) continue;
+      dtimes.push({
+        val: local_edur[k].hasOwnProperty(m) ? local_edur[k][m] : 0,
+        col: color_hash[m]
       });
     }
 
-    function mergeWindowKeyEvents() {
-      // iterate over all events and compute key_stats
-      var key_stats_all = [];
-      for(var k=0;k<events.length;k++) {
-        var es = events[k]['window_events'] || []; // window events for day k
-        var ek = events[k]['keyfreq_events'] || []; // key events
-        key_stats = computeKeyStats(es, ek); // defined in prolific_common
-        key_stats_all.push(key_stats);
+    var day_ix = indices[k];
+    var svgg = svg.append("g")
+      .attr("style", "cursor:pointer;")
+      .on("click", function(day_index) {
+        return function() {
+          window.location.href = "day.html?gotoday=" + day_index;
+        };
+      }(day_ix));
+
+    var gh = 0;
+    svgg.selectAll(".day" + k)
+      .data(dtimes)
+      .enter()
+      .append("rect")
+      .attr("width", dsz)
+      .attr("height", function(d) { return d.val * yscale; })
+      .attr("x", margin.left + k * dsz)
+      .attr("y", function(d) {
+        gh += d.val;
+        return height + margin.top - gh * yscale;
+      })
+      .attr("fill", function(d) { return d.col; });
+  }
+}
+
+function mergeWindowKeyEventsForIndices(indices) {
+  var key_stats_out = [];
+  for(var i=0;i<indices.length;i++) {
+    var k = indices[i];
+    var es = events[k]["window_events"] || [];
+    var ek = events[k]["keyfreq_events"] || [];
+    key_stats_out.push(computeKeyStats(es, ek));
+  }
+  return key_stats_out;
+}
+
+function visualizeKeySummaryForYear(indices, local_categories) {
+  $("#keysummary").empty();
+
+  if(indices.length === 0 || local_categories.length === 0) {
+    $("#keysummary").html('<div class="overview-msg">No key summary for this year.</div>');
+    return;
+  }
+
+  key_stats_all = mergeWindowKeyEventsForIndices(indices);
+
+  var gstats = {};
+  _.each(local_categories, function(m) {
+    gstats[m] = {name: m, val: 0, n: 0, col: color_hash[m]};
+  });
+
+  for(var i=0;i<key_stats_all.length;i++) {
+    var key_stats = key_stats_all[i];
+    for(var j=0;j<local_categories.length;j++) {
+      var cat = local_categories[j];
+      if(key_stats.hasOwnProperty(cat)) {
+        gstats[cat].val += key_stats[cat].f;
+        gstats[cat].n += key_stats[cat].n;
       }
-      return key_stats_all;
     }
+  }
 
-    function visualizeKeySummary(key_stats_all) {
-      $("#keysummary").empty();
+  var arr = _.values(gstats);
+  arr = _.filter(arr, function(d) { return d.val > 0; });
+  _.each(arr, function(d) {
+    var rate = d.n > 0 ? (d.val/(d.n*9)).toFixed(2) : "0.00";
+    d.text = d.val + " (" + rate + "/s) (" + d.name + ")";
+  });
+  arr = _.sortBy(arr, "val").reverse();
 
-      // merge all keystats into a single global key stats
-      var gstats = {};
-      _.each(etypes, function(m) { gstats[m] = {name: m, val: 0, n:0, col: color_hash[m]}; });
-      var n = key_stats_all.length;
-      for(var i=0;i<n;i++) {
-        var key_stats = key_stats_all[i];
-        for(var j=0;j<etypes.length;j++) {
-          var e = etypes[j];
-          if(key_stats.hasOwnProperty(e)) {
-            gstats[e].val += key_stats[e].f;
-            gstats[e].n += key_stats[e].n;
-          }
-        }
+  if(arr.length === 0) {
+    $("#keysummary").html('<div class="overview-msg">No keystrokes recorded in this year.</div>');
+    return;
+  }
+
+  var chart_data = {
+    width: 600,
+    barheight: 30,
+    textpad: 300,
+    textmargin: 10,
+    title: "total keys per window (" + active_year + ")",
+    data: arr
+  };
+  d3utils.drawHorizontalBarChart(d3.select("#keysummary"), chart_data);
+}
+
+function visualizeTimeSummaryForYear(indices, local_categories) {
+  $("#timesummary").empty();
+
+  if(indices.length === 0 || local_categories.length === 0) {
+    $("#timesummary").html('<div class="overview-msg">No time summary for this year.</div>');
+    return;
+  }
+
+  var totals = {};
+  _.each(local_categories, function(m) {
+    totals[m] = {name: m, val: 0, col: color_hash[m]};
+  });
+
+  for(var i=0;i<indices.length;i++) {
+    var day_ix = indices[i];
+    var day_stats = edur[day_ix] || {};
+    for(var j=0;j<local_categories.length;j++) {
+      var cat = local_categories[j];
+      if(day_stats.hasOwnProperty(cat)) {
+        totals[cat].val += day_stats[cat];
       }
-      gstats = _.filter(gstats, function(d) { return d.val > 0; }); // cutoff at 0 keys
-      _.each(gstats, function(d) { d.text = d.val + ' (' + (d.val/(d.n*9)).toFixed(2) + '/s) (' + d.name + ')'; });
-      gstats = _.sortBy(gstats, 'val').reverse();
-
-      // visualize as chart
-      var chart_data = {};
-      chart_data.width = 600;
-      chart_data.barheight = 30;
-      chart_data.textpad = 300;
-      chart_data.textmargin = 10;
-      chart_data.title = 'total keys per window';
-      chart_data.data = gstats;
-      d3utils.drawHorizontalBarChart(d3.select('#keysummary'), chart_data);
     }
+  }
 
-    function visualizeTimeSummary(edur) {
-      $("#timesummary").empty();
+  var arr = _.values(totals);
+  arr = _.filter(arr, function(d) { return d.val > 0; });
+  _.each(arr, function(d) { d.text = (d.val/3600.0).toFixed(2) + "hr (" + d.name + ")"; });
+  arr = _.sortBy(arr, "val").reverse();
 
-      var gstats = {};
-      _.each(etypes, function(m) { gstats[m] = {name: m, val: 0, n:0, col: color_hash[m]}; });
-      var n = edur.length;
-      for(var i=0;i<n;i++) {
-        var key_stats = edur[i];
-        for(var j=0;j<etypes.length;j++) {
-          var e = etypes[j];
-          if(key_stats.hasOwnProperty(e)) {
-            gstats[e].val += key_stats[e];
-          }
-        }
+  if(arr.length === 0) {
+    $("#timesummary").html('<div class="overview-msg">No window-time data in this year.</div>');
+    return;
+  }
+
+  var chart_data = {
+    width: 600,
+    barheight: 30,
+    textpad: 300,
+    textmargin: 10,
+    title: "total time per window (" + active_year + ")",
+    data: arr
+  };
+  d3utils.drawHorizontalBarChart(d3.select("#timesummary"), chart_data);
+}
+
+function visualizeMiscInspectorForYear(indices) {
+  $("#miscinspector").empty();
+
+  if(indices.length === 0) {
+    $("#miscinspector").html('<div class="overview-msg">No data for this year.</div>');
+    return;
+  }
+
+  var intro = $('<p class="year-viewing"></p>').text(
+    "Top raw titles currently mapped to MISC in " + active_year +
+    ". Use these to refine rules in render_settings.js."
+  );
+  $("#miscinspector").append(intro);
+
+  var aggregate = {};
+  for(var i=0;i<indices.length;i++) {
+    var day_ix = indices[i];
+    var day_events = events[day_ix]["window_events"] || [];
+    for(var j=0;j<day_events.length;j++) {
+      var e = day_events[j];
+      if(e.m !== "MISC") {
+        continue;
       }
-      gstats = _.filter(gstats, function(d) { return d.val > 0; }); // cutoff at 0 keys
-      _.each(gstats, function(d) { d.text = (d.val/60/60).toFixed(2) + 'hr (' + d.name + ')'; });
-      gstats = _.sortBy(gstats, 'val').reverse();
+      var raw_title = (e.s || "").trim();
+      if(!raw_title) {
+        continue;
+      }
+      var dt = 1;
+      if(j + 1 < day_events.length) {
+        dt = Math.max(0, day_events[j + 1].t - e.t);
+      }
 
-      // visualize as chart
-      var chart_data = {};
-      chart_data.width = 600;
-      chart_data.barheight = 30;
-      chart_data.textpad = 300;
-      chart_data.textmargin = 10;
-      chart_data.title = 'total time per window';
-      chart_data.data = gstats;
-      d3utils.drawHorizontalBarChart(d3.select('#timesummary'), chart_data);
+      if(!aggregate.hasOwnProperty(raw_title)) {
+        aggregate[raw_title] = {title: raw_title, seconds: 0, hits: 0};
+      }
+      aggregate[raw_title].seconds += dt;
+      aggregate[raw_title].hits += 1;
+    }
+  }
+
+  var rows = _.sortBy(_.values(aggregate), function(x) { return x.seconds; }).reverse();
+  if(rows.length === 0) {
+    $("#miscinspector").append(
+      $('<div class="overview-msg"></div>').text("No MISC entries for this year. Nice mapping coverage.")
+    );
+    return;
+  }
+
+  var table = $('<table class="misc-table"></table>');
+  table.append(
+    '<thead><tr><th>Raw Title</th><th>Hours</th><th>Hits</th></tr></thead>'
+  );
+  var body = $('<tbody></tbody>');
+  var limit = Math.min(20, rows.length);
+  for(var q=0;q<limit;q++) {
+    var row = $('<tr></tr>');
+    row.append($('<td class="misc-title"></td>').text(rows[q].title));
+    row.append($('<td class="misc-hours"></td>').text((rows[q].seconds / 3600.0).toFixed(2)));
+    row.append($('<td class="misc-hits"></td>').text(rows[q].hits));
+    body.append(row);
+  }
+  table.append(body);
+  $("#miscinspector").append(table);
+}
+
+function drawKeyEventsForYear(year) {
+  $("#keystats").empty();
+
+  var info = year_stats[year];
+  if(!info || info.indices.length === 0) {
+    $("#keystats").html('<div class="overview-msg">No key data for this year.</div>');
+    return;
+  }
+
+  var W = $("#keystats").width();
+  if(!W || W < 300) { W = 1200; }
+  var H = 15;
+  var wmargin = 100;
+  var time_bin = 10 * 60;
+
+  var allkevents = [];
+  var d0s = [];
+  var ktots = [];
+  var maxs = 0;
+  var maxktot = 0;
+  var kevents_global = [];
+  var max_kevents_global = 0;
+  var sum_kevents_global = 0;
+
+  for(var i=0;i<info.indices.length;i++) {
+    var day_ix = info.indices[i];
+    var es = events[day_ix]["keyfreq_events"] || [];
+
+    var t00 = event_list[day_ix].t0;
+    var d0 = new Date(t00 * 1000);
+    var ft = t00 + 60*60*24;
+    var kevents = [];
+    var t = t00;
+    while(t <= ft) {
+      kevents.push(0);
+      t += time_bin;
+      if(i === 0) {
+        kevents_global.push(0);
+      }
     }
 
-    function startSpinner() {
-      // create a spinner object
-      var target = document.getElementById('spinnerdiv');
-      opts = {left:'30px', top:'40px', radius: 10, color: "#FFF" };
-      var spinner = new Spinner(opts).spin(target);
+    var ktot = 0;
+    for(var q=0,n=es.length;q<n;q++) {
+      var kw = es[q];
+      var binix = Math.floor((kw.t - t00)/time_bin);
+      if(binix < 0 || binix >= kevents.length) continue;
+
+      kevents[binix] += kw.s;
+      kevents_global[binix] += kw.s;
+      if(kevents[binix] > maxs) maxs = kevents[binix];
+      if(kevents_global[binix] > max_kevents_global) max_kevents_global = kevents_global[binix];
+      sum_kevents_global += kw.s;
+      ktot += kw.s;
     }
-    function stopSpinner() {
-      $("#spinnerdiv").empty();
-    }
 
-    var event_list;
-    var events;
-    function start() {
-      
-      loadAllEvents();
+    allkevents.push(kevents);
+    d0s.push(d0);
+    ktots.push(ktot);
+    if(ktot > maxktot) maxktot = ktot;
+  }
 
-      $("#reloadbutton").click(function() {
+  maxs = Math.max(1, maxs);
+  maxktot = Math.max(1, maxktot);
+  max_kevents_global = Math.max(1, max_kevents_global);
 
-        startSpinner();
-        $.post("/refresh",
-          {"time" : 0},
-          function(data,status){
-            console.log("Data: " + data + "\nStatus: " + status);
-            stopSpinner();
-            if(data === 'OK') {
-              // everything went well, refresh current view
-              loadAllEvents(); // reload all events
-            }
-        });
+  var sx = kevents_global.length;
+  var bar_width = (W - wmargin) / sx;
+  var div = d3.select("#keystats").append("div");
+  var svg = div.append("svg")
+    .attr("width", W)
+    .attr("height", H * 2);
+  var line = d3.svg.line()
+    .x(function(d, i2) { return (W - 2*wmargin) * i2 / sx + wmargin; })
+    .y(function(d) { return 2*H - d / max_kevents_global * H * 2; });
+  svg.append("path")
+    .datum(kevents_global)
+    .attr("class", "line")
+    .attr("d", line);
+
+  div = d3.select("#keystats").append("div");
+  svg = div.append("svg")
+    .attr("width", W)
+    .attr("height", 20);
+  for(var hr=0;hr<24;hr++) {
+    svg.append("text")
+      .attr("font-size", 14)
+      .attr("font-family", "arial")
+      .attr("transform", "translate(" + (hr/24*(W-2*wmargin)+2+wmargin) + ",16)")
+      .text(((hr + 7) % 24) + ":00");
+
+    svg.append("line")
+      .attr("x1", hr/24*(W-2*wmargin)+wmargin)
+      .attr("x2", hr/24*(W-2*wmargin)+wmargin)
+      .attr("y1", 0)
+      .attr("y2", 20)
+      .attr("stroke", "#000")
+      .attr("stroke-width", 2);
+  }
+
+  for(var k=0;k<allkevents.length;k++) {
+    var kevents = allkevents[k];
+    div = d3.select("#keystats").append("div").attr("class", "divkeys");
+
+    svg = div.append("svg")
+      .attr("width", W)
+      .attr("height", H);
+    sx = kevents.length;
+
+    svg.selectAll(".ke")
+      .data(kevents)
+      .enter()
+      .append("rect")
+      .attr("x", function(d, i3) { return (W - 2*wmargin) * i3 / sx + wmargin; })
+      .attr("width", bar_width)
+      .attr("y", 0)
+      .attr("height", H)
+      .attr("fill", function(d) {
+        var e = d / maxs;
+        var r = Math.floor(Math.max(0, 255 - e*255));
+        var g = Math.floor(Math.max(0, 255 - e*255));
+        var b = 255;
+        return "rgb(" + r + "," + g + "," + b + ")";
       });
+
+    svg.append("text")
+      .attr("font-size", 14)
+      .attr("transform", "translate(0,12)")
+      .attr("font-family", "arial")
+      .text(ppDateShort(d0s[k]));
+
+    svg.append("rect")
+      .attr("x", W - wmargin + 5)
+      .attr("y", 0)
+      .attr("width", ktots[k] / maxktot * wmargin)
+      .attr("height", H)
+      .attr("fill", "rgb(255, 100, 100)");
+
+    svg.append("text")
+      .attr("transform", "translate(" + (W - wmargin + 7) + ",13)")
+      .attr("font-size", 14)
+      .attr("font-family", "arial")
+      .text(ktots[k]);
+  }
+
+  var avg = info.day_count > 0 ? Math.floor(sum_kevents_global / info.day_count) : 0;
+  d3.select("#keystats")
+    .append("p")
+    .attr("class", "al")
+    .text("total keys pressed: " + sum_kevents_global + " in " + info.day_count + " days (" + avg + " per day average)");
+}
+
+function drawYearlyOverview() {
+  if(active_year === null || !year_stats.hasOwnProperty(active_year)) {
+    showOverviewMessage("No yearly data yet. Click <b>Refresh Data</b> after tracking for a bit.");
+    return;
+  }
+
+  renderYearControls();
+  renderYearSummaryCards();
+  drawEventsForYear(active_year);
+
+  var indices = year_stats[active_year].indices || [];
+  var local_categories = categoriesForIndices(indices);
+  visualizeKeySummaryForYear(indices, local_categories);
+  visualizeTimeSummaryForYear(indices, local_categories);
+  visualizeMiscInspectorForYear(indices);
+
+  try {
+    drawKeyEventsForYear(active_year);
+  } catch (err) {
+    console.log("drawKeyEventsForYear failed: " + err);
+  }
+}
+
+function loadAllEvents() {
+  var loaded_ok = false;
+
+  getJSON_CACHEHACK("export_list.json").then(function(days_list) {
+    event_list = days_list || [];
+    return Promise.all(event_list.map(function(x) { return getJSON_CACHEHACK(x.fname); }));
+  }).then(function(days) {
+    events = days || [];
+    loaded_ok = true;
+  }).catch(function(err) {
+    console.log("some error happened: " + err);
+    var msg = "Global Overview could not load data. ";
+    if(window.location.protocol === "file:") {
+      msg += "Open it from the local server instead: ";
+      msg += '<a href="' + overviewPrimaryUrl + '">:8080</a> or ';
+      msg += '<a href="' + overviewFallbackUrl + '">:8090</a>.';
+    } else {
+      msg += "Try refreshing, then open via ";
+      msg += '<a href="' + overviewPrimaryUrl + '">:8080</a> or ';
+      msg += '<a href="' + overviewFallbackUrl + '">:8090</a>.';
+    }
+    showOverviewMessage(msg);
+  }).then(function() {
+    if(!loaded_ok) return;
+
+    if(!event_list || event_list.length === 0) {
+      showOverviewMessage("No exported days yet. Click <b>Refresh Data</b> after tracking for a bit.");
+      return;
     }
 
-    
+    analyzeEvents();
+    buildYearStats();
+    drawYearlyOverview();
+  });
+}
+
+function startSpinner() {
+  var target = document.getElementById("spinnerdiv");
+  opts = {left: "30px", top: "40px", radius: 10, color: "#FFF"};
+  var spinner = new Spinner(opts).spin(target);
+}
+
+function stopSpinner() {
+  $("#spinnerdiv").empty();
+}
+
+function start() {
+  if(window.location.protocol === "file:") {
+    showOverviewMessage(
+      "Global Overview needs the Prolific local server. Open " +
+      '<a href="' + overviewPrimaryUrl + '">' + overviewPrimaryUrl + "</a> or " +
+      '<a href="' + overviewFallbackUrl + '">' + overviewFallbackUrl + "</a>."
+    );
+    return;
+  }
+
+  loadAllEvents();
+
+  $("#reloadbutton").click(function() {
+    startSpinner();
+    $.post("/refresh", {"time": 0}, function(data, status) {
+      console.log("Data: " + data + "\nStatus: " + status);
+      stopSpinner();
+      if(data === "OK") {
+        loadAllEvents();
+      }
+    });
+  });
+}

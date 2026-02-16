@@ -19,16 +19,22 @@
 
 #content,
 #keystats,
-#summaries {
+#summaries,
+#yearsummary,
+#miscinspector {
   border: 1px solid var(--border);
   border-radius: var(--radius-1);
   background: rgba(0, 0, 0, 0.18);
   padding: var(--space-2);
 }
 
+#content,
+#keystats {
+  overflow-x: auto;
+}
+
 #keystats {
   width: 100%;
-  overflow-x: auto;
 }
 
 #summaries {
@@ -36,6 +42,137 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--space-2);
+}
+
+.misc-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.misc-table th,
+.misc-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  text-align: left;
+  vertical-align: top;
+}
+
+.misc-table th {
+  color: #ffb976;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.misc-title {
+  color: var(--text-0);
+  max-width: 620px;
+  word-break: break-word;
+}
+
+.misc-hours,
+.misc-hits {
+  color: var(--text-1);
+  white-space: nowrap;
+}
+
+.year-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.year-card {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  background: rgba(13, 10, 8, 0.42);
+  padding: 14px;
+  cursor: pointer;
+  transition: border-color 140ms ease, box-shadow 140ms ease, transform 140ms ease;
+}
+
+.year-card:hover {
+  border-color: rgba(255, 168, 92, 0.48);
+  transform: translateY(-1px);
+}
+
+.year-card.active {
+  border-color: rgba(255, 171, 97, 0.7);
+  box-shadow: 0 0 0 1px rgba(255, 171, 97, 0.25);
+}
+
+.year-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.year-title {
+  margin: 0;
+  font-size: 22px;
+  color: var(--text-0);
+}
+
+.year-total {
+  margin: 0;
+  color: var(--text-1);
+  font-size: 14px;
+}
+
+.year-meta {
+  margin: 0 0 10px 0;
+  font-size: 13px;
+  color: var(--text-1);
+}
+
+.year-track {
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.year-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #ff8a2e, #ffbf7a);
+}
+
+.year-cats {
+  display: grid;
+  gap: 6px;
+}
+
+.year-cat-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.year-cat-name {
+  color: var(--text-1);
+}
+
+.year-cat-hours {
+  color: var(--text-0);
+  font-weight: 700;
+}
+
+.overview-msg {
+  padding: var(--space-2);
+  border-radius: var(--radius-1);
+  border: 1px dashed rgba(255, 167, 76, 0.45);
+  background: rgba(255, 122, 24, 0.08);
+  color: var(--text-0);
+  line-height: 1.6;
+}
+
+.overview-msg a {
+  color: #ffb266;
 }
 
 .legenddiv p {
@@ -46,6 +183,35 @@
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(0, 0, 0, 0.18);
+}
+
+.year-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.year-chip {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.2);
+  color: var(--text-1);
+  border-radius: 999px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.year-chip.active {
+  border-color: rgba(255, 163, 82, 0.75);
+  color: #ffd6b3;
+  background: rgba(255, 122, 24, 0.18);
+}
+
+.year-viewing {
+  margin: 0 0 12px 0;
+  color: var(--text-1);
+  font-size: 14px;
 }
 
 .skipdrawyes {
@@ -75,6 +241,10 @@
 
 @media (max-width: 1100px) {
   #summaries {
+    grid-template-columns: 1fr;
+  }
+
+  .year-grid {
     grid-template-columns: 1fr;
   }
 }

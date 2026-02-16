@@ -1,6 +1,7 @@
 param(
     [int]$Port = 8080,
     [int]$FallbackPort = 8090,
+    [int]$IdleSeconds = 300,
     [switch]$NoBrowser,
     [int]$ServerReadyTimeoutSeconds = 30
 )
@@ -107,7 +108,7 @@ function Ensure-ProlificServerPort {
 Write-Host "Ensuring collector is running..."
 Start-ProlificComponent `
     -DisplayName "collector" `
-    -Arguments @("prolific.py", "start") `
+    -Arguments @("prolific.py", "start", "--idle-seconds", "$IdleSeconds") `
     -CommandPattern "prolific.py start" | Out-Null
 
 $activeServerPort = $null

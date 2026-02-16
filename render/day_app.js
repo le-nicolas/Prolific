@@ -5,6 +5,7 @@
     var ecounts = {};
     var etypes = [];
     var hacking_stats = {};
+    var focus_stats = {};
 
     // renders pie chart showing distribution of time spent into #piechart
     function createPieChart(es, etypes) {
@@ -72,6 +73,136 @@
         .attr("y", function(d) {return 30-10*d.intensity} )
         .attr("height", function(d) {return 10*d.intensity; })
         .attr("fill", function(d) { return c; });
+    }
+
+    function computeFocusTaxStats(es) {
+      var passive_titles = (typeof passive_hacking_titles !== 'undefined') ? passive_hacking_titles : [];
+      var deep_titles = {};
+      for(var i=0;i<hacking_titles.length;i++) { deep_titles[hacking_titles[i]] = true; }
+      for(var j=0;j<passive_titles.length;j++) { deep_titles[passive_titles[j]] = true; }
+
+      var ignored_titles = {
+        "Idle": true,
+        "Locked Screen": true,
+        "Task Switching": true,
+      };
+
+      var seq = [];
+      for(var q=0,N=es.length;q<N;q++) {
+        var e = es[q];
+        if(!e || !e.m || !e.dt || e.dt <= 0) continue;
+        if(ignored_titles[e.m]) continue;
+        seq.push({m: e.m, dt: e.dt});
+      }
+
+      var active_seconds = 0;
+      var counts = {};
+      var short_hops = 0;
+      var deep_blocks = 0;
+      for(var a=0;a<seq.length;a++) {
+        var s = seq[a];
+        active_seconds += s.dt;
+        counts[s.m] = (counts[s.m] || 0) + s.dt;
+        if(s.dt < 120) short_hops++;
+        if(s.dt >= 1500) deep_blocks++;
+      }
+
+      var switches = 0;
+      var tax_seconds = 0;
+      var last_switch_ix = -999;
+      for(var b=1;b<seq.length;b++) {
+        var prev = seq[b-1];
+        var cur = seq[b];
+        if(prev.m === cur.m) continue;
+
+        switches++;
+        var penalty = 30;
+        penalty += 0.15 * Math.min(prev.dt, 600);
+        penalty += 0.15 * Math.min(cur.dt, 600);
+        if(deep_titles[prev.m] || deep_titles[cur.m]) {
+          penalty += 20;
+        }
+        if((b - last_switch_ix) <= 2) {
+          penalty += 15; // clustered switching is extra expensive
+        }
+        tax_seconds += penalty;
+        last_switch_ix = b;
+      }
+
+      if(active_seconds > 0) {
+        tax_seconds = Math.min(tax_seconds, active_seconds * 0.5);
+      }
+
+      var cats = _.keys(counts);
+      var entropy = 0.0;
+      for(var c=0;c<cats.length;c++) {
+        var p = counts[cats[c]] / Math.max(1, active_seconds);
+        if(p > 0) {
+          entropy += -p * (Math.log(p) / Math.log(2));
+        }
+      }
+      var max_entropy = cats.length > 1 ? (Math.log(cats.length) / Math.log(2)) : 1.0;
+      var coherence = 100;
+      if(cats.length > 1) {
+        coherence = Math.max(0, Math.min(100, Math.round(100 * (1.0 - entropy / max_entropy))));
+      }
+
+      var tax_pct = active_seconds > 0 ? (100.0 * tax_seconds / active_seconds) : 0;
+
+      return {
+        active_seconds: active_seconds,
+        tax_seconds: Math.round(tax_seconds),
+        tax_pct: tax_pct,
+        coherence: coherence,
+        switches: switches,
+        short_hops: short_hops,
+        deep_blocks: deep_blocks,
+      };
+    }
+
+    function focusTipForStats(stats) {
+      if(stats.active_seconds <= 0) {
+        return "Not enough active data yet for a focus estimate.";
+      }
+      if(stats.coherence >= 80 && stats.switches <= 8) {
+        return "Flow looked stable. Protect this day pattern.";
+      }
+      if(stats.short_hops >= 18) {
+        return "High micro-switching. Try batching similar tasks into longer blocks.";
+      }
+      if(stats.tax_pct >= 22) {
+        return "Hidden context tax is high. Reduce app/category switching during deep work windows.";
+      }
+      if(stats.deep_blocks <= 1) {
+        return "Few deep blocks. Aim for 2+ sessions of 25 minutes or more.";
+      }
+      return "Good baseline. Push coherence up by reducing non-essential switches.";
+    }
+
+    function visualizeFocusMeter(stats) {
+      $("#focusmeter").empty();
+
+      var div = d3.select("#focusmeter").append("div");
+      div.append("p").attr("class", "focus-label").text("Attention Residue");
+      div.append("p").attr("class", "focus-tax").text("Hidden Focus Tax: " + strTimeDelta(stats.tax_seconds));
+
+      var score_row = div.append("div").attr("class", "focus-score-row");
+      score_row.append("p").attr("class", "focus-meta").text("Coherence");
+      score_row.append("p").attr("class", "focus-score").text(stats.coherence + "/100");
+
+      var track = div.append("div").attr("class", "focus-track");
+      track.append("div")
+        .attr("class", "focus-fill")
+        .style("width", stats.coherence + "%");
+
+      var meta = "";
+      meta += "Switches: " + stats.switches + " | ";
+      meta += "Rapid hops (<2m): " + stats.short_hops + " | ";
+      meta += "Deep blocks (>=25m): " + stats.deep_blocks + "<br>";
+      meta += "Estimated residue: " + stats.tax_pct.toFixed(1) + "% of active time";
+      div.append("p").attr("class", "focus-meta").html(meta);
+
+      div.append("p").attr("class", "focus-tip").text(focusTipForStats(stats));
     }
 
     // number of keys pressed in every window type visualization
@@ -376,6 +507,8 @@
         computeKeyStats(events, key_events);
         hacking_stats = computeHackingStats(events, key_events, hacking_titles);
         visualizeHackingTimes(hacking_stats);
+        focus_stats = computeFocusTaxStats(events);
+        visualizeFocusMeter(focus_stats);
         key_stats = computeKeyStats(events, key_events);
         visualizeKeyStats(key_stats, etypes);
         visualizeKeyFreq(key_events);
@@ -519,6 +652,7 @@
       visualizeKeyFreq(key_events);
       visualizeNotes(notes_events);
       visualizeHackingTimes(hacking_stats);
+      visualizeFocusMeter(focus_stats);
       dirty = false;
     }
 
