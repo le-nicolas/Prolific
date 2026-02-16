@@ -1,0 +1,74 @@
+.home-hero {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: var(--space-3);
+  align-items: stretch;
+}
+
+.home-headline {
+  font-size: clamp(36px, 6vw, 64px);
+  line-height: 0.95;
+  margin: 0 0 12px 0;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+}
+
+.home-gradient-text {
+  background: linear-gradient(120deg, #ffb273, #ff7a18 45%, #ffd29f 95%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.home-copy {
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--text-1);
+  max-width: 66ch;
+}
+
+.home-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-top: var(--space-3);
+}
+
+.home-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.home-metric {
+  padding: var(--space-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-1);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.home-metric strong {
+  display: block;
+  font-size: 26px;
+  margin-bottom: 6px;
+}
+
+.home-stack {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.home-footer {
+  margin-top: var(--space-5);
+  color: var(--text-2);
+  font-size: 13px;
+  text-align: center;
+}
+
+@media (max-width: 1100px) {
+  .home-hero,
+  .home-card-grid {
+    grid-template-columns: 1fr;
+  }
+}

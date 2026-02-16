@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Prolific | Daily Analytics</title>
+    <link href="font_lato.css" rel="stylesheet" type="text/css">
+    <link href="v2_theme.css" rel="stylesheet" type="text/css">
+    <link href="day.css" rel="stylesheet" type="text/css">
+
+    <script src="jquery-1.8.3.min.js"></script>
+    <script src="spin.min.js"></script>
+    <script src="render_utils.js"></script>
+    <script src="render_settings.js"></script>
+    <script src="d3.min.js" charset="utf-8"></script>
+    <script src="d3utils.js" charset="utf-8"></script>
+    <script src="underscore.min.js" charset="utf-8"></script>
+    <script src="prolific_common.js" charset="utf-8"></script>
+    <script src="day_app.js" charset="utf-8"></script>
+  </head>
+  <body onload="start()">
+    <div id="spinnerdiv"></div>
+
+    <div class="top-shell">
+      <header class="v2-header">
+        <div class="v2-brand">
+          <div class="v2-logo">P</div>
+          <div>
+            <h1 class="v2-title">Daily Analytics</h1>
+            <p class="v2-subtitle">One day, fully visible.</p>
+          </div>
+        </div>
+        <nav class="v2-nav">
+          <a href="index.html">Homepage</a>
+          <a href="overview.html">Overview</a>
+          <button id="reloadbutton" type="button">Refresh Data</button>
+        </nav>
+      </header>
+
+      <section class="v2-panel">
+        <div class="day-nav-row">
+          <div id="leftarrow" class="arrow" title="Previous day">&lt;</div>
+          <div id="header"></div>
+          <div id="rightarrow" class="arrow" title="Next day">&gt;</div>
+        </div>
+      </section>
+
+      <section class="day-grid">
+        <div class="day-main">
+          <div class="v2-panel" id="blogwrap">
+            <p class="v2-kicker">Day Journal</p>
+            <pre id="blogpre"></pre>
+            <div id="blogenter">
+              <textarea id="blogentertxt"></textarea>
+              <button id="blogentersubmit" type="button">Save Entry</button>
+            </div>
+          </div>
+
+          <div id="eventvis" class="v2-panel"></div>
+          <div id="piechart" class="v2-panel"></div>
+        </div>
+
+        <aside class="day-side">
+          <div id="keystats" class="v2-panel"></div>
+          <div id="keygraph" class="v2-panel"></div>
+
+          <div id="notesinfo" class="v2-panel">
+            <div id="notesinfohide">X</div>
+            <div>
+              <div id="notesmsg"></div>
+              <input type="text" id="notetext" placeholder="Add context note">
+              <div id="notesadd">Add Note</div>
+            </div>
+          </div>
+
+          <div id="notesvis" class="v2-panel"></div>
+          <div id="hackingvis" class="v2-panel"></div>
+        </aside>
+      </section>
+    </div>
+  </body>
+</html>

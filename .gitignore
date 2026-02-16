@@ -1,0 +1,22 @@
+# Runtime data (privacy-first)
+logs/
+render/events_*.json
+render/export_list.json
+
+# Local caches/artifacts
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.mypy_cache/
+
+# Node/python envs
+node_modules/
+.venv/
+venv/
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

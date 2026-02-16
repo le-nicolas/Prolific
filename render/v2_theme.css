@@ -1,0 +1,229 @@
+:root {
+  --bg-0: #0d0b0a;
+  --bg-1: #15110f;
+  --bg-2: #1d1713;
+  --panel: #221b16;
+  --panel-strong: #2a211a;
+  --text-0: #f6eee3;
+  --text-1: #d9c7b2;
+  --text-2: #a18a74;
+  --accent: #ff7a18;
+  --accent-strong: #ff9b3d;
+  --accent-dim: #7f3f14;
+  --border: #3e2a1c;
+  --ok: #2fa66f;
+  --warn: #d18a2c;
+  --space-1: 12px;
+  --space-2: 18px;
+  --space-3: 28px;
+  --space-4: 40px;
+  --space-5: 64px;
+  --radius-1: 12px;
+  --radius-2: 18px;
+  --radius-3: 24px;
+  --shadow-1: 0 12px 40px rgba(0, 0, 0, 0.35);
+  --shadow-2: 0 20px 60px rgba(0, 0, 0, 0.45);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  color: var(--text-0);
+  font-family: "Lato", "Segoe UI", sans-serif;
+  background:
+    radial-gradient(1200px 600px at 88% -10%, rgba(255, 122, 24, 0.22), transparent 60%),
+    radial-gradient(900px 500px at 0% 100%, rgba(255, 122, 24, 0.14), transparent 58%),
+    linear-gradient(165deg, var(--bg-0), var(--bg-1) 58%, #17100b);
+}
+
+a {
+  color: var(--accent-strong);
+}
+
+a:hover {
+  color: #ffbf87;
+}
+
+.top-shell {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: var(--space-4) var(--space-4) var(--space-5) var(--space-4);
+}
+
+.v2-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.v2-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.v2-logo {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  background: linear-gradient(145deg, #ff8a2c, #cf4f00);
+  color: #120d09;
+  font-weight: 900;
+  font-size: 25px;
+  display: grid;
+  place-items: center;
+  box-shadow: var(--shadow-1);
+}
+
+.v2-title {
+  margin: 0;
+  font-size: 30px;
+  line-height: 1;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+}
+
+.v2-subtitle {
+  margin: 6px 0 0 0;
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+.v2-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-wrap: wrap;
+}
+
+.v2-nav a,
+.v2-nav button {
+  text-decoration: none;
+  border: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.16);
+  color: var(--text-0);
+  padding: 10px 14px;
+  border-radius: 999px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: border-color 120ms ease, transform 120ms ease, background 120ms ease;
+}
+
+.v2-nav a:hover,
+.v2-nav button:hover {
+  border-color: var(--accent);
+  background: rgba(255, 122, 24, 0.16);
+  transform: translateY(-1px);
+}
+
+.v2-panel {
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0)), var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-2);
+  box-shadow: var(--shadow-1);
+  padding: var(--space-3);
+}
+
+.v2-panel h2,
+.v2-panel h3 {
+  margin: 0 0 10px 0;
+  line-height: 1.2;
+}
+
+.v2-muted {
+  color: var(--text-1);
+}
+
+.v2-kicker {
+  color: var(--accent-strong);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+
+.v2-grid-2 {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: var(--space-3);
+}
+
+.v2-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.v2-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #ff8a2e, #db5600);
+  color: #130d08;
+  border: 0;
+  border-radius: 999px;
+  padding: 12px 18px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.v2-cta:hover {
+  filter: brightness(1.08);
+}
+
+.v2-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--text-1);
+  font-size: 12px;
+}
+
+.v2-section {
+  margin-top: var(--space-4);
+}
+
+.v2-section + .v2-section {
+  margin-top: var(--space-5);
+}
+
+.v2-surface {
+  background: var(--panel-strong);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-1);
+  padding: var(--space-2);
+}
+
+.v2-alert {
+  border-left: 3px solid var(--accent);
+  padding-left: 12px;
+}
+
+svg text {
+  fill: #e7dac8 !important;
+}
+
+@media (max-width: 1100px) {
+  .v2-grid-2,
+  .v2-grid-3 {
+    grid-template-columns: 1fr;
+  }
+  .top-shell {
+    padding: var(--space-3);
+  }
+}
