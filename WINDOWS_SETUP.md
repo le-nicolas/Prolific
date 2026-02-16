@@ -13,7 +13,7 @@ python -m pip install -r requirements.txt
 
 ```powershell
 cd C:\Users\User\prolific_deployment
-python tray_app.py --port 8080 --fallback-port 8090
+python tray_app.py --port 8080 --fallback-port 8090 --idle-seconds 300
 ```
 
 Tray menu includes:
@@ -26,13 +26,13 @@ Tray menu includes:
 
 ```powershell
 cd C:\Users\User\prolific_deployment
-.\install_startup_task.ps1 -TaskName ProlificStartup -Port 8080 -FallbackPort 8090
+.\install_startup_task.ps1 -TaskName ProlificStartup -Port 8080 -FallbackPort 8090 -IdleSeconds 300
 ```
 
 This task launches:
 
 ```text
-pythonw.exe tray_app.py --port 8080 --fallback-port 8090
+pythonw.exe tray_app.py --port 8080 --fallback-port 8090 --idle-seconds 300
 ```
 
 Remove later:
@@ -61,6 +61,11 @@ If you prefer script-based startup:
 
 - If `8080` is occupied, runtime falls back to `8090`.
 - You can set another port explicitly in both tray and startup task.
+
+### Idle threshold
+
+- Default idle threshold is `300` seconds.
+- Change it with `--idle-seconds` (tray/manual) or `-IdleSeconds` (startup task).
 
 ### Duplicate process protection
 

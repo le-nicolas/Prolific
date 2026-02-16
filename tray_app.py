@@ -65,9 +65,10 @@ def iter_python_processes():
 
 
 class RuntimeController:
-    def __init__(self, port, fallback_port):
+    def __init__(self, port, fallback_port, idle_seconds):
         self.port = int(port)
         self.fallback_port = int(fallback_port) if fallback_port is not None else None
+        self.idle_seconds = max(15, int(idle_seconds))
         self.python_exe = sys.executable
         self.active_port = None
         self.last_error = ""
@@ -117,7 +118,7 @@ class RuntimeController:
     def ensure_collector(self):
         if self.collector_running():
             return True
-        self._spawn(["prolific.py", "start"])
+        self._spawn(["prolific.py", "start", "--idle-seconds", str(self.idle_seconds)])
         time.sleep(0.5)
         return self.collector_running()
 
@@ -200,8 +201,8 @@ def make_icon_image():
     return image
 
 
-def build_tray(port, fallback_port, open_on_start):
-    controller = RuntimeController(port=port, fallback_port=fallback_port)
+def build_tray(port, fallback_port, idle_seconds, open_on_start):
+    controller = RuntimeController(port=port, fallback_port=fallback_port, idle_seconds=idle_seconds)
     controller.ensure_runtime()
 
     if open_on_start:
@@ -295,6 +296,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Prolific tray controller")
     parser.add_argument("--port", type=int, default=8080)
     parser.add_argument("--fallback-port", type=int, default=8090, help=argparse.SUPPRESS)
+    parser.add_argument("--idle-seconds", type=int, default=300)
     parser.add_argument("--no-open", action="store_true", help="Do not open homepage on startup")
     return parser.parse_args()
 
@@ -305,7 +307,7 @@ def main():
     if mutex is None:
         return 0
 
-    icon = build_tray(args.port, args.fallback_port, open_on_start=not args.no_open)
+    icon = build_tray(args.port, args.fallback_port, args.idle_seconds, open_on_start=not args.no_open)
     try:
         icon.run()
     finally:
