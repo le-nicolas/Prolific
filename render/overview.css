@@ -27,9 +27,13 @@
   padding: var(--space-2);
 }
 
+#content,
+#keystats {
+  overflow-x: auto;
+}
+
 #keystats {
   width: 100%;
-  overflow-x: auto;
 }
 
 #summaries {
@@ -50,6 +54,18 @@
   border-radius: 14px;
   background: rgba(13, 10, 8, 0.42);
   padding: 14px;
+  cursor: pointer;
+  transition: border-color 140ms ease, box-shadow 140ms ease, transform 140ms ease;
+}
+
+.year-card:hover {
+  border-color: rgba(255, 168, 92, 0.48);
+  transform: translateY(-1px);
+}
+
+.year-card.active {
+  border-color: rgba(255, 171, 97, 0.7);
+  box-shadow: 0 0 0 1px rgba(255, 171, 97, 0.25);
 }
 
 .year-head {
@@ -70,6 +86,12 @@
   margin: 0;
   color: var(--text-1);
   font-size: 14px;
+}
+
+.year-meta {
+  margin: 0 0 10px 0;
+  font-size: 13px;
+  color: var(--text-1);
 }
 
 .year-track {
@@ -128,6 +150,35 @@
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(0, 0, 0, 0.18);
+}
+
+.year-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.year-chip {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.2);
+  color: var(--text-1);
+  border-radius: 999px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.year-chip.active {
+  border-color: rgba(255, 163, 82, 0.75);
+  color: #ffd6b3;
+  background: rgba(255, 122, 24, 0.18);
+}
+
+.year-viewing {
+  margin: 0 0 12px 0;
+  color: var(--text-1);
+  font-size: 14px;
 }
 
 .skipdrawyes {
