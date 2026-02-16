@@ -143,7 +143,7 @@ def start_logging(stop_event, window_poll_seconds=WINDOW_POLL_SECONDS, key_bucke
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description="Windows-native ulogme collector: active windows + key frequency."
+        description="Windows-native Prolific collector: active windows + key frequency."
     )
     parser.add_argument("command", choices=["start"], help="Start the collectors.")
     parser.add_argument(

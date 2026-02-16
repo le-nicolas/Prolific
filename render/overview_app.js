@@ -361,7 +361,7 @@
       for(var k=0;k<events.length;k++) {
         var es = events[k]['window_events'] || []; // window events for day k
         var ek = events[k]['keyfreq_events'] || []; // key events
-        key_stats = computeKeyStats(es, ek); // defined in ulogme_common
+        key_stats = computeKeyStats(es, ek); // defined in prolific_common
         key_stats_all.push(key_stats);
       }
       return key_stats_all;

@@ -7,7 +7,7 @@ LOG_DIR = "logs"
 def log_note(note, timestamp=None):
     """
     Logs a note with the current or provided timestamp into a daily log file.
-    File and line format are compatible with ulogme:
+    File and line format follow Prolific's daily notes format:
     logs/notes_<t0>.txt and "<timestamp> <note>".
     """
     # Ensure logs directory exists
