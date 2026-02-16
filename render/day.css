@@ -153,6 +153,67 @@ input[type="text"] {
   color: var(--text-2);
 }
 
+#focusmeter {
+  border: 1px solid rgba(255, 166, 86, 0.32);
+  background: linear-gradient(135deg, rgba(255, 133, 45, 0.11), rgba(8, 6, 5, 0.72));
+}
+
+.focus-label {
+  margin: 0 0 8px 0;
+  color: #ffb976;
+  font-size: 13px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.focus-tax {
+  margin: 0 0 10px 0;
+  color: var(--text-0);
+  font-size: 24px;
+  font-weight: 900;
+}
+
+.focus-track {
+  position: relative;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.11);
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.focus-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #ff7b2a, #ffbf7a);
+}
+
+.focus-score-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.focus-score {
+  color: #ffd9b8;
+  font-weight: 800;
+}
+
+.focus-meta {
+  margin: 0;
+  color: var(--text-1);
+  line-height: 1.5;
+  font-size: 14px;
+}
+
+.focus-tip {
+  margin: 10px 0 0 0;
+  color: #ffe6cf;
+  font-size: 14px;
+}
+
 #piechart text,
 #keystats text {
   font-family: "Lato", "Segoe UI", sans-serif;
