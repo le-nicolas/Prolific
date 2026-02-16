@@ -1,6 +1,7 @@
 param(
     [string]$TaskName = "ProlificStartup",
-    [int]$Port = 8090
+    [int]$Port = 8080,
+    [int]$FallbackPort = 8090
 )
 
 $ErrorActionPreference = "Stop"
@@ -13,7 +14,7 @@ if (-not (Test-Path $pythonwExe)) {
 }
 
 $trayScript = Join-Path $root "tray_app.py"
-$arguments = "`"$trayScript`" --port $Port"
+$arguments = "`"$trayScript`" --port $Port --fallback-port $FallbackPort"
 
 $action = New-ScheduledTaskAction `
     -Execute $pythonwExe `

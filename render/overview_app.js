@@ -6,7 +6,8 @@
       $("#timesummary").empty();
       $("#keystats").empty();
     }
-    var canonicalOverviewUrl = "http://127.0.0.1:8090/overview.html";
+    var overviewPrimaryUrl = "http://127.0.0.1:8080/overview.html";
+    var overviewFallbackUrl = "http://127.0.0.1:8090/overview.html";
 
     var skipdraw = {}; // global...
     function drawEvents() {
@@ -355,10 +356,13 @@
         console.log('some error happened: ' + err);
         var msg = 'Global Overview could not load data. ';
         if(window.location.protocol === 'file:') {
-          msg += 'Open it from the local server: ';
-          msg += '<a href="' + canonicalOverviewUrl + '">' + canonicalOverviewUrl + '</a>.';
+          msg += 'Open it from the local server instead: ';
+          msg += '<a href="' + overviewPrimaryUrl + '">:8080</a> or ';
+          msg += '<a href="' + overviewFallbackUrl + '">:8090</a>.';
         } else {
-          msg += 'Try refreshing this page.';
+          msg += 'Try refreshing, then open via ';
+          msg += '<a href="' + overviewPrimaryUrl + '">:8080</a> or ';
+          msg += '<a href="' + overviewFallbackUrl + '">:8090</a>.';
         }
         showOverviewMessage(msg);
       }).then(function() {
@@ -474,7 +478,9 @@
       if(window.location.protocol === 'file:') {
         showOverviewMessage(
           'Global Overview needs the Prolific local server. Open ' +
-          '<a href="' + canonicalOverviewUrl + '">' + canonicalOverviewUrl + '</a>.'
+          '<a href="' + overviewPrimaryUrl + '">' + overviewPrimaryUrl + '</a> ' +
+          'or ' +
+          '<a href="' + overviewFallbackUrl + '">' + overviewFallbackUrl + '</a>.'
         );
         return;
       }

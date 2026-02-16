@@ -65,8 +65,9 @@ def iter_python_processes():
 
 
 class RuntimeController:
-    def __init__(self, port):
+    def __init__(self, port, fallback_port):
         self.port = int(port)
+        self.fallback_port = int(fallback_port) if fallback_port is not None else None
         self.python_exe = sys.executable
         self.active_port = None
         self.last_error = ""
@@ -99,6 +100,9 @@ class RuntimeController:
     def detect_server_port(self):
         if self.server_procs(self.port):
             return self.port
+        if self.fallback_port is not None and self.fallback_port != self.port:
+            if self.server_procs(self.fallback_port):
+                return self.fallback_port
         return None
 
     def _spawn(self, args):
@@ -143,6 +147,11 @@ class RuntimeController:
         if self.ensure_server_port(self.port):
             self.active_port = self.port
             return self.active_port
+
+        if self.fallback_port is not None and self.fallback_port != self.port:
+            if self.ensure_server_port(self.fallback_port):
+                self.active_port = self.fallback_port
+                return self.active_port
 
         self.active_port = None
         return None
@@ -191,8 +200,8 @@ def make_icon_image():
     return image
 
 
-def build_tray(port, open_on_start):
-    controller = RuntimeController(port=port)
+def build_tray(port, fallback_port, open_on_start):
+    controller = RuntimeController(port=port, fallback_port=fallback_port)
     controller.ensure_runtime()
 
     if open_on_start:
@@ -284,8 +293,8 @@ def acquire_singleton_mutex():
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Prolific tray controller")
-    parser.add_argument("--port", type=int, default=8090)
-    parser.add_argument("--fallback-port", type=int, default=None, help=argparse.SUPPRESS)
+    parser.add_argument("--port", type=int, default=8080)
+    parser.add_argument("--fallback-port", type=int, default=8090, help=argparse.SUPPRESS)
     parser.add_argument("--no-open", action="store_true", help="Do not open homepage on startup")
     return parser.parse_args()
 
@@ -296,7 +305,7 @@ def main():
     if mutex is None:
         return 0
 
-    icon = build_tray(args.port, open_on_start=not args.no_open)
+    icon = build_tray(args.port, args.fallback_port, open_on_start=not args.no_open)
     try:
         icon.run()
     finally:

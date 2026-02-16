@@ -26,7 +26,7 @@ This project is built for the stage where consistent effort matters most. The go
 ```powershell
 cd C:\Users\User\prolific_deployment
 python -m pip install -r requirements.txt
-python tray_app.py --port 8090
+python tray_app.py --port 8080 --fallback-port 8090
 ```
 
 What you get:
@@ -59,7 +59,7 @@ Legacy compatibility:
 
 ```powershell
 cd C:\Users\User\prolific_deployment
-.\install_startup_task.ps1 -TaskName ProlificStartup -Port 8090
+.\install_startup_task.ps1 -TaskName ProlificStartup -Port 8080 -FallbackPort 8090
 ```
 
 Remove it later:
@@ -68,12 +68,12 @@ Remove it later:
 Unregister-ScheduledTask -TaskName ProlificStartup -Confirm:$false
 ```
 
-## Manual runner
+## Manual fallback runner
 
-If needed, you can run the script runner directly:
+If needed, you can still run the previous script runner:
 
 ```powershell
-.\start_windows.ps1 -Port 8090
+.\start_windows.ps1 -Port 8080
 ```
 
 ## Core backend contracts (unchanged)

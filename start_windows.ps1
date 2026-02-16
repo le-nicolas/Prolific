@@ -1,5 +1,6 @@
 param(
-    [int]$Port = 8090,
+    [int]$Port = 8080,
+    [int]$FallbackPort = 8090,
     [switch]$NoBrowser,
     [int]$ServerReadyTimeoutSeconds = 30
 )
@@ -112,6 +113,13 @@ Start-ProlificComponent `
 $activeServerPort = $null
 if (Ensure-ProlificServerPort -DesiredPort $Port) {
     $activeServerPort = $Port
+} elseif ($FallbackPort -ne $Port) {
+    Write-Host "Port $Port is already in use by another process; trying fallback port $FallbackPort."
+    if (Ensure-ProlificServerPort -DesiredPort $FallbackPort) {
+        $activeServerPort = $FallbackPort
+    } else {
+        Write-Host "Fallback port $FallbackPort is also in use by another process; skipping server startup."
+    }
 } else {
     Write-Host "Port $Port is already in use by another process; skipping server startup."
 }
@@ -121,7 +129,7 @@ if (-not $NoBrowser) {
         Start-Process "http://localhost:$activeServerPort"
         Write-Host "Opened dashboard: http://localhost:$activeServerPort"
     } elseif (-not $activeServerPort) {
-        Write-Host "Configured server port $Port unavailable; browser launch skipped."
+        Write-Host "No available server port found; browser launch skipped."
     } else {
         Write-Host "Server did not become ready within $ServerReadyTimeoutSeconds seconds."
     }

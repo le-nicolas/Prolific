@@ -13,7 +13,7 @@ python -m pip install -r requirements.txt
 
 ```powershell
 cd C:\Users\User\prolific_deployment
-python tray_app.py --port 8090
+python tray_app.py --port 8080 --fallback-port 8090
 ```
 
 Tray menu includes:
@@ -26,13 +26,13 @@ Tray menu includes:
 
 ```powershell
 cd C:\Users\User\prolific_deployment
-.\install_startup_task.ps1 -TaskName ProlificStartup -Port 8090
+.\install_startup_task.ps1 -TaskName ProlificStartup -Port 8080 -FallbackPort 8090
 ```
 
 This task launches:
 
 ```text
-pythonw.exe tray_app.py --port 8090
+pythonw.exe tray_app.py --port 8080 --fallback-port 8090
 ```
 
 Remove later:
@@ -43,25 +43,24 @@ Unregister-ScheduledTask -TaskName ProlificStartup -Confirm:$false
 
 ## 4) Routes
 
-- Homepage: `http://localhost:8090/`
-- Daily analytics: `http://localhost:8090/day.html`
-- Overview: `http://localhost:8090/overview.html`
+- Homepage: `http://localhost:8080/` (or fallback port)
+- Daily analytics: `http://localhost:8080/day.html`
+- Overview: `http://localhost:8080/overview.html`
 
-## 5) Manual script
+## 5) Manual fallback script
 
 If you prefer script-based startup:
 
 ```powershell
-.\start_windows.ps1 -Port 8090
+.\start_windows.ps1 -Port 8080
 ```
 
 ## Troubleshooting
 
 ### Port collisions
 
-- Prolific uses one configured port only (`8090` by default).
-- If that port is occupied, Prolific will not auto-switch ports.
-- Choose a free port explicitly, then use the same port in tray + startup task.
+- If `8080` is occupied, runtime falls back to `8090`.
+- You can set another port explicitly in both tray and startup task.
 
 ### Duplicate process protection
 
