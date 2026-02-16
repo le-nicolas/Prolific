@@ -367,7 +367,7 @@
 
         // render blog entry
         blog = 'blog' in data ? data['blog'] : '';
-        if(blog === '') { blog = 'click to enter blog for this day'; }
+        if(typeof blog !== 'string') { blog = ''; }
         $("#blogpre").text(blog);
 
         visualizeEvents(events);
