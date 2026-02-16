@@ -285,6 +285,7 @@ def acquire_singleton_mutex():
 def parse_args():
     parser = argparse.ArgumentParser(description="Prolific tray controller")
     parser.add_argument("--port", type=int, default=8090)
+    parser.add_argument("--fallback-port", type=int, default=None, help=argparse.SUPPRESS)
     parser.add_argument("--no-open", action="store_true", help="Do not open homepage on startup")
     return parser.parse_args()
 
