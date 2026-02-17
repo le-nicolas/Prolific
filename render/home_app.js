@@ -1,10 +1,14 @@
 (function () {
   "use strict";
 
+  function pad2(n) {
+    return String(n).padStart(2, "0");
+  }
+
   function formatDayStamp(ts) {
     if (!ts) return "-";
     var d = new Date(ts * 1000);
-    return d.toISOString().slice(0, 10);
+    return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
   }
 
   function setText(id, val) {
@@ -26,7 +30,19 @@
   function refreshStatus() {
     setText("homeStatusServer", "Checking...");
     setText("homeStatusPort", portOrigin());
-    fetch("export_list.json?sigh=" + Math.floor(Math.random() * 100000), { cache: "no-store" })
+    fetch("/refresh", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
+      body: "time=0",
+      cache: "no-store"
+    })
+      .catch(function () {
+        // Home status should still render if refresh endpoint is temporarily unavailable.
+        return null;
+      })
+      .then(function () {
+        return fetch("export_list.json?sigh=" + Math.floor(Math.random() * 100000), { cache: "no-store" });
+      })
       .then(function (r) {
         if (!r.ok) throw new Error("HTTP " + r.status);
         return r.json();
