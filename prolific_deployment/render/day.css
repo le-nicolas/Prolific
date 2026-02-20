@@ -1,0 +1,330 @@
+#spinnerdiv {
+  position: fixed;
+  left: 10px;
+  top: 10px;
+  width: 42px;
+  height: 42px;
+  z-index: 10;
+}
+
+#reloadbutton {
+  border: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.2);
+  color: var(--text-0);
+  border-radius: 12px;
+  padding: 10px 14px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.day-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+
+.day-main,
+.day-side {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.day-nav-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.arrow {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  font-size: 24px;
+  color: var(--text-0);
+  background: rgba(0, 0, 0, 0.25);
+  user-select: none;
+}
+
+#header h2 {
+  margin: 0;
+  font-size: 24px;
+  color: var(--text-0);
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+  font-weight: 900;
+}
+
+#blogwrap pre {
+  background: rgba(0, 0, 0, 0.26);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-1);
+  color: var(--text-1);
+  min-height: 120px;
+  padding: var(--space-2);
+  white-space: pre-wrap;
+  margin: 0;
+  cursor: pointer;
+}
+
+#blogenter textarea,
+input[type="text"] {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.24);
+  color: var(--text-0);
+  padding: 12px;
+  font-size: 15px;
+  font-family: "Lato", "Segoe UI", sans-serif;
+}
+
+#blogenter textarea {
+  min-height: 180px;
+  resize: vertical;
+}
+
+#blogentersubmit,
+#notesadd {
+  margin-top: 10px;
+  border: 0;
+  border-radius: 12px;
+  padding: 10px 14px;
+  cursor: pointer;
+  background: linear-gradient(135deg, #ff8a2e, #db5600);
+  color: #1a120a;
+  font-weight: 900;
+}
+
+#notesinfo {
+  display: none;
+  position: relative;
+  border: 1px solid var(--border);
+  background: rgba(17, 13, 10, 0.95);
+  border-radius: var(--radius-1);
+  padding: var(--space-2);
+}
+
+#notesinfohide {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  cursor: pointer;
+  color: var(--text-2);
+  font-size: 18px;
+}
+
+.tt {
+  margin: 0 0 6px 0;
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.td {
+  margin: 0 0 6px 0;
+  color: var(--text-1);
+}
+
+.fdiv {
+  display: inline-block;
+  margin-right: var(--space-2);
+}
+
+#keystats,
+#keygraph,
+#notesvis,
+#hackingvis,
+#eventvis,
+#piechart {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-1);
+  background: rgba(0, 0, 0, 0.18);
+  padding: var(--space-2);
+}
+
+#keygraph .al {
+  margin-top: 10px;
+  color: var(--text-2);
+}
+
+#focusmeter {
+  border: 1px solid rgba(255, 166, 86, 0.32);
+  background: linear-gradient(135deg, rgba(255, 133, 45, 0.11), rgba(8, 6, 5, 0.72));
+}
+
+#coffeemeter {
+  border: 1px solid rgba(232, 190, 120, 0.35);
+  background: linear-gradient(135deg, rgba(190, 132, 64, 0.14), rgba(8, 6, 5, 0.75));
+}
+
+.focus-label {
+  margin: 0 0 8px 0;
+  color: #ffb976;
+  font-size: 13px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.focus-tax {
+  margin: 0 0 10px 0;
+  color: var(--text-0);
+  font-size: 24px;
+  font-weight: 900;
+}
+
+.focus-track {
+  position: relative;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.11);
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.focus-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #ff7b2a, #ffbf7a);
+}
+
+.focus-score-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.focus-score {
+  color: #ffd9b8;
+  font-weight: 800;
+}
+
+.focus-meta {
+  margin: 0;
+  color: var(--text-1);
+  line-height: 1.5;
+  font-size: 14px;
+}
+
+.focus-tip {
+  margin: 10px 0 0 0;
+  color: #ffe6cf;
+  font-size: 14px;
+}
+
+.coffee-total {
+  margin: 0 0 8px 0;
+  color: #ffe2be;
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.coffee-meta {
+  margin: 0 0 6px 0;
+  color: var(--text-1);
+  font-size: 14px;
+}
+
+.coffee-controls {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px 10px;
+  align-items: center;
+  margin: 10px 0 12px 0;
+}
+
+.coffee-input-label {
+  color: var(--text-2);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.coffee-select,
+.coffee-time-input {
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--text-0);
+  padding: 8px 10px;
+  font-size: 14px;
+  font-family: "Lato", "Segoe UI", sans-serif;
+}
+
+#coffee-add {
+  grid-column: 1 / span 2;
+  border: 0;
+  border-radius: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+  background: linear-gradient(135deg, #f2b35a, #be6f2a);
+  color: #2a1608;
+  font-weight: 900;
+}
+
+#coffee-add[disabled] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.coffee-tip {
+  margin: 0 0 10px 0;
+  color: #ffe9cf;
+  line-height: 1.45;
+  font-size: 14px;
+}
+
+.coffee-list {
+  margin-top: 8px;
+}
+
+.coffee-entry {
+  margin: 0 0 4px 0;
+  color: var(--text-1);
+  font-size: 14px;
+}
+
+.coffee-sources {
+  margin-top: 10px;
+}
+
+.coffee-source {
+  margin: 0;
+  color: #e6d3b2;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.coffee-source a {
+  color: #ffca8f;
+  text-decoration: underline;
+}
+
+#piechart text,
+#keystats text {
+  font-family: "Lato", "Segoe UI", sans-serif;
+  fill: #e7dac8;
+}
+
+#piechart .arc-label {
+  font-size: 12px;
+}
+
+.line {
+  fill: none;
+  stroke: #ff9b3d;
+  stroke-width: 1.6px;
+}
+
+@media (max-width: 1100px) {
+  .day-grid {
+    grid-template-columns: 1fr;
+  }
+}

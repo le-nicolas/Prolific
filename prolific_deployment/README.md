@@ -49,12 +49,12 @@ This starts collector + server and puts a Prolific icon in the Windows tray.
 
 ## Mechanical Sankey Desktop App
 
-This repo also includes a standalone desktop Sankey builder for mechanical engineering balances:
+This repo also includes a standalone desktop Sankey builder with category-based guided inputs:
 
 - File: `sankey_mech_app.py`
 - UI: windowed app (`tkinter`) with embedded chart preview
 - Input: custom flows (`+` inflow, `-` outflow), orientation, units, title
-- Extras: built-in guide tab, example presets, JSON save/load, PNG export
+- Extras: built-in guide tab, category templates, JSON save/load, PNG export
 
 Run it:
 
@@ -66,9 +66,9 @@ python sankey_mech_app.py
 
 Usage summary:
 
-1. Add flow rows with label, value, orientation.
-2. Keep values balanced (sum near 0) or enable auto-balance residual.
-3. Click `Plot / Refresh Sankey`.
+1. Pick a category and template (Thermodynamics, Fluid/Powertrain, Manufacturing, Maintenance, Cost, HVAC, Systems, Project/Risk).
+2. Fill template-specific input fields and click `Generate Flows from Inputs`.
+3. Optionally edit flow rows manually, then click `Plot / Refresh Sankey`.
 4. Save model JSON or export PNG when ready.
 
 ## Tray Menu
@@ -107,12 +107,14 @@ If you prefer no tray:
 - `POST /refresh` -> `OK`
 - `POST /addnote` -> `OK`
 - `POST /blog` -> `OK`
+- `POST /addcoffee` -> `OK` (records a coffee event for current day; capped at 3/day)
 
 Daily export schema (`render/events_<t0>.json`):
 
 - `window_events: [{t,s}]`
 - `keyfreq_events: [{t,s}]`
 - `notes_events: [{t,s}]`
+- `coffee_events: [{t,mg}]`
 - `blog: string`
 
 ## SQLite Migration
