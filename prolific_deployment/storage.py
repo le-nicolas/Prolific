@@ -176,6 +176,8 @@ def upsert_blog_for_timestamp(timestamp, post):
 
 
 def insert_coffee_event(timestamp=None, mg=100):
+    # Ensure upgraded deployments have coffee schema before first write.
+    init_db()
     ts = int(time.time()) if timestamp is None else int(timestamp)
     day_t0 = rewindTime(ts)
     mg_value = int(mg)

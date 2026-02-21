@@ -1,4 +1,5 @@
 import os
+import sqlite3
 from pathlib import Path
 
 import pytest
@@ -97,3 +98,31 @@ def test_legacy_backfill_and_live_writes(tmp_path, monkeypatch):
         storage.insert_coffee_event(timestamp=day_t0 + 400, mg=100)
 
     assert os.path.isfile(db_path)
+
+
+def test_insert_coffee_event_migrates_missing_table(tmp_path, monkeypatch):
+    logs_dir = tmp_path / "logs"
+    db_path = logs_dir / "prolific.db"
+    day_t0 = 1736550000
+
+    monkeypatch.setenv("PROLIFIC_LOG_DIR", str(logs_dir))
+    monkeypatch.setenv("PROLIFIC_DB_PATH", str(db_path))
+
+    logs_dir.mkdir(parents=True, exist_ok=True)
+    with sqlite3.connect(db_path) as conn:
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS window_events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                t INTEGER NOT NULL,
+                day_t0 INTEGER NOT NULL,
+                s TEXT NOT NULL,
+                source_path TEXT
+            )
+            """
+        )
+
+    storage.insert_coffee_event(timestamp=day_t0 + 120, mg=90)
+
+    coffees = storage.fetch_coffee_events(day_t0)
+    assert coffees == [{"t": day_t0 + 120, "mg": 90}]
